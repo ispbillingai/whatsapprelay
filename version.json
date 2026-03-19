@@ -1,6 +1,6 @@
 {
-    "versionCode": 13,
-    "versionName": "1.7.1",
+    "versionCode": 14,
+    "versionName": "1.7.2",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.7.1 Fixes:\n- Fixed crash on Start Relay (keeps stopping)\n- All service code wrapped in try-catch\n- Handle Android 14+ exact alarm permission denial\n- Fallback to inexact alarm if permission denied\n- Safe foreground service startup"
+    "changelog": "v1.7.2 Fixes:\n- Fixed crash on Android 14/15 (foregroundServiceType required)\n- Added FOREGROUND_SERVICE_SPECIAL_USE permission\n- Added specialUse foreground service type for polling\n- Handles exact alarm permission denial on Android 14+"
 }
