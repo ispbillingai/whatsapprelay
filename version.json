@@ -1,6 +1,6 @@
 {
-    "versionCode": 8,
-    "versionName": "1.6.0",
+    "versionCode": 9,
+    "versionName": "1.6.1",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.6.0 Updates:\n- Fixed: Always attempts to wake screen and send, even when phone is locked\n- Restored requestDismissKeyguard - will prompt for PIN/password\n- Added SCREEN_BRIGHT_WAKE_LOCK to force screen on\n- Removed defer logic - no more waiting for unlock\n- Debug info in notification shows each step"
+    "changelog": "v1.6.1 Updates:\n- Removed WhatsApp type selector from app (now controlled from dashboard)\n- Added reminder: after update, stop and start relay service\n- Cleaner app interface"
 }
