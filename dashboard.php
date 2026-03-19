@@ -139,14 +139,23 @@ renderHeader('Dashboard', 'dashboard');
             <small class="text-muted">Viewing your personal data</small>
         <?php endif; ?>
     </div>
-    <div class="btn-group">
-        <a href="?view=admin" class="btn btn-sm <?= $adminView ? 'btn-primary' : 'btn-outline-primary' ?>">
-            <i class="bi bi-speedometer2"></i> Admin Overview
-        </a>
-        <a href="?view=personal" class="btn btn-sm <?= !$adminView ? 'btn-success' : 'btn-outline-success' ?>">
-            <i class="bi bi-person"></i> My Dashboard
-        </a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-success btn-sm" onclick="startTourManual()"><i class="bi bi-mortarboard"></i> Take a Tour</button>
+        <div class="btn-group">
+            <a href="?view=admin" class="btn btn-sm <?= $adminView ? 'btn-primary' : 'btn-outline-primary' ?>">
+                <i class="bi bi-speedometer2"></i> Admin Overview
+            </a>
+            <a href="?view=personal" class="btn btn-sm <?= !$adminView ? 'btn-success' : 'btn-outline-success' ?>">
+                <i class="bi bi-person"></i> My Dashboard
+            </a>
+        </div>
     </div>
+</div>
+<?php endif; ?>
+
+<?php if (!$isAdminUser): ?>
+<div class="d-flex justify-content-end mb-3">
+    <button class="btn btn-outline-success btn-sm" onclick="startTourManual()"><i class="bi bi-mortarboard"></i> Take a Tour</button>
 </div>
 <?php endif; ?>
 
@@ -668,7 +677,7 @@ $usersList = $stmt->fetchAll();
     </div>
 </div>
 
-<?php if (!empty($_SESSION['is_first_login'])): $_SESSION['is_first_login'] = false; ?>
+<?php $isFirstLogin = !empty($_SESSION['is_first_login']); if ($isFirstLogin) $_SESSION['is_first_login'] = false; ?>
 <!-- Tour overlay + highlight system -->
 <style>
 .tour-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); z-index: 9998; }
@@ -836,10 +845,15 @@ function endTour() {
     document.getElementById('tourTooltip').classList.add('d-none');
 }
 
+function startTourManual() {
+    new bootstrap.Modal(document.getElementById('tourWelcome')).show();
+}
+
+<?php if ($isFirstLogin): ?>
 document.addEventListener('DOMContentLoaded', function() {
     new bootstrap.Modal(document.getElementById('tourWelcome')).show();
 });
-</script>
 <?php endif; ?>
+</script>
 
 <?php renderFooter(); ?>
