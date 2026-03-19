@@ -40,14 +40,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $error = 'Passwords do not match';
         } else {
             $db = getDB();
+            $phone = preg_replace('/[^0-9]/', '', $phone);
+
+            // Check email
             $existing = $db->prepare('SELECT id FROM users WHERE email = ?');
             $existing->execute([$email]);
             if ($existing->fetch()) {
-                $error = 'An account with this email already exists';
-            } else {
+                $error = 'This email address is already registered. Try logging in or use a different email.';
+            }
+
+            // Check phone if provided
+            if (!$error && $phone) {
+                $existingPhone = $db->prepare('SELECT id FROM users WHERE phone = ? AND phone IS NOT NULL AND phone != ""');
+                $existingPhone->execute([$phone]);
+                if ($existingPhone->fetch()) {
+                    $error = 'This phone number is already registered to another account. Try a different number.';
+                }
+            }
+
+            if (!$error) {
                 $name = explode('@', $email)[0]; // use email prefix as name
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                $phone = preg_replace('/[^0-9]/', '', $phone);
                 $db->prepare('INSERT INTO users (name, email, phone, password, role, is_active) VALUES (?, ?, ?, ?, "user", 1)')
                    ->execute([$name, $email, $phone ?: null, $hash]);
 
@@ -68,21 +81,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         if (empty($email)) {
             $error = 'Please enter your email address';
-        } elseif (empty($newPass) || strlen($newPass) < 6) {
-            $error = 'New password must be at least 6 characters';
-        } elseif ($newPass !== $confirmPass) {
-            $error = 'Passwords do not match';
         } else {
+            // Check if email exists FIRST
             $db = getDB();
             $user = $db->prepare('SELECT id FROM users WHERE email = ?');
             $user->execute([$email]);
-            if ($user->fetch()) {
+            if (!$user->fetch()) {
+                $error = 'No account found with this email address. Please check your email or create a new account.';
+            } elseif (empty($newPass) || strlen($newPass) < 6) {
+                $error = 'New password must be at least 6 characters';
+            } elseif ($newPass !== $confirmPass) {
+                $error = 'Passwords do not match';
+            } else {
                 $newHash = password_hash($newPass, PASSWORD_DEFAULT);
                 $db->prepare('UPDATE users SET password = ?, must_change_password = 0 WHERE email = ?')->execute([$newHash, $email]);
                 $success = 'Your password has been reset successfully. You can now login with your new password.';
                 $tab = 'login';
-            } else {
-                $error = 'No account found with this email address';
             }
         }
     }
