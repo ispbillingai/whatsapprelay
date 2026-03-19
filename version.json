@@ -1,6 +1,6 @@
 {
-    "versionCode": 6,
-    "versionName": "1.5.0",
+    "versionCode": 7,
+    "versionName": "1.5.1",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.5.0 Updates:\n- Fixed: Restored Handler-based polling for reliable screen-off operation\n- Dual polling: Handler (primary) + AlarmManager (Doze backup)\n- Message expiry reduced to 5 minutes to prevent pile-up"
+    "changelog": "v1.5.1 Debug:\n- Notification shows exact step: polling, fetching, sending, locked status\n- Shows poll count, screen state, lock state in notification\n- Helps diagnose why messages aren't sending when screen is off"
 }
