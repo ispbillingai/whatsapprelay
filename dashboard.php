@@ -172,8 +172,8 @@ renderHeader('Dashboard', 'dashboard');
         </div>
 
         <div class="bg-dark bg-opacity-50 rounded-3 p-3 mb-3 position-relative" style="font-family: monospace; font-size: 13px; word-break: break-all;">
-            <input type="hidden" id="fullApiUrl" value="<?= htmlspecialchars($serverBase) ?>/api.php?to=[number]&msg=[text]&apikey=<?= htmlspecialchars($userKey) ?>">
-            <span class="text-warning"><?= htmlspecialchars($serverBase) ?>/api.php?to=</span><span class="text-info">[number]</span><span class="text-warning">&msg=</span><span class="text-info">[text]</span><span class="text-warning">&apikey=</span><span class="text-success"><?= htmlspecialchars($userKey) ?></span>
+            <input type="hidden" id="fullApiUrl" value="<?= htmlspecialchars($serverBase) ?>/api/sendWA.php?to=[number]&msg=[text]&secret=<?= htmlspecialchars($userKey) ?>">
+            <span class="text-warning"><?= htmlspecialchars($serverBase) ?>/api/sendWA.php?to=</span><span class="text-info">[number]</span><span class="text-warning">&msg=</span><span class="text-info">[text]</span><span class="text-warning">&secret=</span><span class="text-success"><?= htmlspecialchars($userKey) ?></span>
             <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" onclick="copyUrl()" title="Copy Full URL">
                 <i class="bi bi-clipboard" id="copyUrlIcon"></i> <span id="copyUrlText" class="small">Copy URL</span>
             </button>
@@ -232,7 +232,7 @@ renderHeader('Dashboard', 'dashboard');
 
         <div class="small opacity-75">
             <strong>Example:</strong>
-            <code class="text-light"><?= htmlspecialchars($serverBase) ?>/api.php?to=254712345678&msg=Hello+World&apikey=<?= htmlspecialchars($userKey) ?></code>
+            <code class="text-light"><?= htmlspecialchars($serverBase) ?>/api/sendWA.php?to=254712345678&msg=Hello+World&secret=<?= htmlspecialchars($userKey) ?></code>
         </div>
     </div>
 </div>

@@ -317,14 +317,14 @@ renderHeader('Installation Guide', 'installation');
         <p class="small">Once your phone is set up and the relay service is running, send messages from any system:</p>
 
         <h6 class="small fw-bold mt-3">Simple URL method (recommended for billing systems)</h6>
-        <pre class="bg-dark text-light p-3 rounded-3 small"><code>https://whatsapp.ispledger.com/api.php?to=[number]&msg=[text]&apikey=YOUR_API_KEY</code></pre>
+        <pre class="bg-dark text-light p-3 rounded-3 small"><code>https://whatsapp.ispledger.com/api/sendWA.php?to=[number]&msg=[text]&secret=YOUR_API_KEY</code></pre>
 
         <h6 class="small fw-bold mt-3">PHP example</h6>
         <pre class="bg-dark text-light p-3 rounded-3 small"><code>$phone = '254712345678';
 $message = urlencode('Hello! Your invoice is ready.');
-$apikey = 'YOUR_API_KEY';
+$secret = 'YOUR_API_KEY';
 
-$url = "https://whatsapp.ispledger.com/api.php?to={$phone}&msg={$message}&apikey={$apikey}";
+$url = "https://whatsapp.ispledger.com/api/sendWA.php?to={$phone}&msg={$message}&secret={$secret}";
 $response = file_get_contents($url);
 echo $response;</code></pre>
 
