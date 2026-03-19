@@ -5,9 +5,9 @@
 
 // Database configuration
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'whatsappbulk');
-define('DB_USER', 'whatsappbulk');
-define('DB_PASS', 'whatsappbulk');
+define('DB_NAME', 'whatsapp');
+define('DB_USER', 'whatsapp');
+define('DB_PASS', 'whatsapp');
 
 // Message settings
 define('MAX_RETRY_COUNT', 3);

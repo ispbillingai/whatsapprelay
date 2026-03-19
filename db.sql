@@ -1,7 +1,7 @@
 -- WhatsApp Relay Server Database Schema
 
-CREATE DATABASE IF NOT EXISTS whatsappbulk;
-USE whatsappbulk;
+CREATE DATABASE IF NOT EXISTS whatsapp;
+USE whatsapp;
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (

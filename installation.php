@@ -44,7 +44,7 @@ renderHeader('Installation Guide', 'installation');
     <div class="card-body text-center py-4">
         <h5 class="fw-bold"><i class="bi bi-download text-success"></i> Download the App</h5>
         <p class="text-muted">Download the FreeISP WA Android app to get started.</p>
-        <a href="https://whatsappbulk.ispledger.com/whatsapp.apk" class="btn btn-wa btn-lg px-5">
+        <a href="https://whatsapp.ispledger.com/whatsapp.apk" class="btn btn-wa btn-lg px-5">
             <i class="bi bi-download"></i> Download APK
         </a>
         <div class="mt-2 small text-muted">
@@ -69,7 +69,7 @@ renderHeader('Installation Guide', 'installation');
             <div>
                 <h6 class="fw-bold mb-1">Download the APK</h6>
                 <p class="mb-1">Open this page on your Android phone and tap the Download button above, or visit:</p>
-                <code class="d-block p-2 bg-light rounded small">https://whatsappbulk.ispledger.com/whatsapp.apk</code>
+                <code class="d-block p-2 bg-light rounded small">https://whatsapp.ispledger.com/whatsapp.apk</code>
             </div>
         </div>
 
@@ -115,7 +115,7 @@ renderHeader('Installation Guide', 'installation');
                 <h6 class="fw-bold mb-1">Open the App & Enter Server Details</h6>
                 <p class="mb-1">Launch FreeISP WA and fill in:</p>
                 <table class="table table-sm table-bordered small mb-1">
-                    <tr><td class="fw-bold" style="width:130px;">Server URL</td><td><code>https://whatsappbulk.ispledger.com</code> (must start with https://)</td></tr>
+                    <tr><td class="fw-bold" style="width:130px;">Server URL</td><td><code>https://whatsapp.ispledger.com</code> (must start with https://)</td></tr>
                     <tr><td class="fw-bold">API Key</td><td>Copy from the <strong>Dashboard</strong> page (top of page)</td></tr>
                     <tr><td class="fw-bold">Poll Interval</td><td>How often to check for new messages (default: 5 seconds)</td></tr>
                     <tr><td class="fw-bold">WhatsApp Type</td><td>Choose WhatsApp or WhatsApp Business depending on which is installed</td></tr>
@@ -295,19 +295,19 @@ renderHeader('Installation Guide', 'installation');
         <p class="small">Once your phone is set up and the relay service is running, send messages from any system:</p>
 
         <h6 class="small fw-bold mt-3">Simple URL method (recommended for billing systems)</h6>
-        <pre class="bg-dark text-light p-3 rounded-3 small"><code>https://whatsappbulk.ispledger.com/api.php?to=[number]&msg=[text]&apikey=YOUR_API_KEY</code></pre>
+        <pre class="bg-dark text-light p-3 rounded-3 small"><code>https://whatsapp.ispledger.com/api.php?to=[number]&msg=[text]&apikey=YOUR_API_KEY</code></pre>
 
         <h6 class="small fw-bold mt-3">PHP example</h6>
         <pre class="bg-dark text-light p-3 rounded-3 small"><code>$phone = '254712345678';
 $message = urlencode('Hello! Your invoice is ready.');
 $apikey = 'YOUR_API_KEY';
 
-$url = "https://whatsappbulk.ispledger.com/api.php?to={$phone}&msg={$message}&apikey={$apikey}";
+$url = "https://whatsapp.ispledger.com/api.php?to={$phone}&msg={$message}&apikey={$apikey}";
 $response = file_get_contents($url);
 echo $response;</code></pre>
 
         <h6 class="small fw-bold mt-3">JSON POST method (advanced)</h6>
-        <pre class="bg-dark text-light p-3 rounded-3 small"><code>curl -X POST https://whatsappbulk.ispledger.com/api.php/send \
+        <pre class="bg-dark text-light p-3 rounded-3 small"><code>curl -X POST https://whatsapp.ispledger.com/api.php/send \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"phone": "254712345678", "message": "Hello!"}'</code></pre>
