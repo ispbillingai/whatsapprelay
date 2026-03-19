@@ -272,6 +272,32 @@ renderHeader('Dashboard', 'dashboard');
         </div>
     </div>
 </div>
+
+<!-- Dedicated Phone Warning -->
+<div class="card mb-4 border-danger border-opacity-50">
+    <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+            <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:48px;height:48px;">
+                <i class="bi bi-unlock text-danger" style="font-size:22px;"></i>
+            </div>
+            <div>
+                <h6 class="mb-1 text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Important: Remove Screen Lock on Dedicated Phone</h6>
+                <p class="small mb-2">For messages to send reliably <strong>even when the screen is off</strong>, you must remove the screen lock (PIN, pattern, password, fingerprint) on your dedicated relay phone.</p>
+                <div class="bg-light rounded-3 p-3 mb-2">
+                    <p class="small fw-bold mb-1">How to remove screen lock:</p>
+                    <ol class="small mb-0">
+                        <li>Go to <strong>Settings > Security > Screen Lock</strong></li>
+                        <li>Enter your current PIN/pattern</li>
+                        <li>Select <strong>"None"</strong> or <strong>"Swipe"</strong></li>
+                    </ol>
+                </div>
+                <div class="small text-muted">
+                    <i class="bi bi-info-circle"></i> <strong>Why?</strong> When the phone is locked with a PIN/password, Android blocks apps from opening WhatsApp in the background. Without a screen lock, messages can be sent automatically even when the screen turns off. This phone should be a <strong>dedicated device</strong> — not your personal phone.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <?php endif; ?>
 
 <script>
