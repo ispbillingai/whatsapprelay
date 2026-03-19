@@ -310,10 +310,10 @@ if ($path === '/pending' && $method === 'GET') {
 
     $db = getDB();
 
-    // Auto-expire messages pending for more than 10 minutes to avoid pile-up
+    // Auto-expire messages pending for more than 5 minutes to avoid pile-up
     $expired = $db->prepare(
         'UPDATE messages SET status = "expired", error_message = "Expired - phone was unreachable for too long"
-         WHERE status = "pending" AND user_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)'
+         WHERE status = "pending" AND user_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
     );
     $expired->execute([$authUserId]);
     $expiredCount = $expired->rowCount();

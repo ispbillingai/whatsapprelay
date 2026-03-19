@@ -273,8 +273,8 @@ renderHeader('Dashboard', 'dashboard');
                 <div class="d-flex gap-2">
                     <i class="bi bi-clock-history text-purple mt-1"></i>
                     <div>
-                        <strong class="small">Auto-Expire After 10 Minutes</strong>
-                        <p class="text-muted small mb-0">Messages pending for more than 10 minutes are automatically expired to prevent pile-up. You can retry them from below.</p>
+                        <strong class="small">Auto-Expire After 5 Minutes</strong>
+                        <p class="text-muted small mb-0">Messages pending for more than 5 minutes are automatically expired to prevent pile-up. You can retry them from below.</p>
                     </div>
                 </div>
             </div>
