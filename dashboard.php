@@ -170,15 +170,36 @@ renderHeader('Dashboard', 'dashboard');
             </button>
         </div>
 
+        <!-- Where each goes -->
+        <div class="bg-dark bg-opacity-25 rounded-3 p-3 mb-3">
+            <div class="row g-2 small">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-pc-display text-info" style="font-size:18px;"></i>
+                        <strong>For your Billing System:</strong>
+                    </div>
+                    <p class="mb-0 opacity-75">Copy the <strong>full URL above</strong> <i class="bi bi-arrow-up"></i> then go to your billing system: <strong>Settings > General Settings > WhatsApp Notification</strong> and paste it there.</p>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-phone text-warning" style="font-size:18px;"></i>
+                        <strong>For the FreeISP WA App:</strong>
+                    </div>
+                    <p class="mb-0 opacity-75">Copy only the <strong>API Key below</strong> <i class="bi bi-arrow-down"></i> and paste it into the app on your phone. This key links your phone to your account.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-2 mb-3">
             <div class="col-md-8">
                 <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-dark border-0 text-muted" style="font-size:11px;">Your API Key</span>
+                    <span class="input-group-text bg-dark border-0 text-muted" style="font-size:11px;">API Key (for the app only)</span>
                     <input type="text" class="form-control bg-dark border-0 text-white" id="apiKeyDisplay" value="<?= htmlspecialchars($userKey) ?>" readonly style="font-family:monospace; font-size:13px;">
                     <button class="btn btn-light btn-sm" onclick="copyKey()" title="Copy API Key">
                         <i class="bi bi-clipboard" id="copyIcon"></i>
                     </button>
                 </div>
+                <small class="opacity-50" style="font-size:10px;"><i class="bi bi-info-circle"></i> This API key is for your phone app, not your billing system. For billing, copy the full URL above.</small>
             </div>
             <div class="col-md-4 text-end">
                 <a href="api-keys.php" class="btn btn-outline-light btn-sm"><i class="bi bi-gear"></i> Manage Keys</a>
@@ -622,143 +643,175 @@ $usersList = $stmt->fetchAll();
 </div>
 
 <?php if (!empty($_SESSION['is_first_login'])): $_SESSION['is_first_login'] = false; ?>
-<!-- First-time Tour Guide Modal -->
-<div class="modal fade" id="tourModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<!-- Tour overlay + highlight system -->
+<style>
+.tour-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); z-index: 9998; }
+.tour-highlight { position: relative; z-index: 9999; box-shadow: 0 0 0 4px #25D366, 0 0 20px rgba(37,211,102,0.5); border-radius: 12px; transition: box-shadow 0.3s; }
+.tour-tooltip {
+    position: fixed; z-index: 10000; background: white; border-radius: 16px;
+    padding: 24px; max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.tour-tooltip .tour-arrow {
+    font-size: 28px; color: #25D366; animation: bounce 1s infinite;
+}
+@keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.tour-tooltip .step-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%; background: #25D366; color: white; font-weight: 700; font-size: 14px;
+}
+.tour-tooltip .tour-title { font-size: 16px; font-weight: 700; color: #075E54; }
+.tour-tooltip .tour-desc { font-size: 13px; color: #555; }
+</style>
+
+<!-- Welcome modal first -->
+<div class="modal fade" id="tourWelcome" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 20px; overflow: hidden;">
-            <div class="modal-body p-0">
-                <!-- Tour Steps -->
-                <div id="tourStep1" class="tour-step">
-                    <div class="text-center p-5" style="background: linear-gradient(135deg, #075E54, #25D366); color: white;">
-                        <i class="bi bi-whatsapp" style="font-size: 64px;"></i>
-                        <h3 class="mt-3 fw-bold">Welcome to FreeISP Whatsapp Messaging!</h3>
-                        <p class="opacity-75 mb-0">Let's get you set up in 4 easy steps.</p>
-                    </div>
-                    <div class="p-4 text-center">
-                        <p class="text-muted">This guide will walk you through everything you need to start sending WhatsApp messages from your billing system.</p>
-                        <button class="btn btn-success btn-lg px-5" onclick="tourNext(2)">Let's Go <i class="bi bi-arrow-right"></i></button>
-                    </div>
-                </div>
-
-                <div id="tourStep2" class="tour-step d-none">
-                    <div class="p-4">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">1</span>
-                            <h5 class="mb-0">Download & Install the App</h5>
-                        </div>
-                        <div class="ms-5">
-                            <p>Download the <strong>FreeISP WA</strong> Android app onto the phone you'll use for sending messages.</p>
-                            <div class="bg-light rounded-3 p-3 mb-3">
-                                <i class="bi bi-download text-success"></i> Go to <strong>Installation Guide</strong> in the sidebar for the download link and step-by-step instructions.
-                            </div>
-                            <div class="alert alert-warning py-2 small mb-0">
-                                <i class="bi bi-exclamation-triangle"></i> <strong>Important:</strong> After installing, go to <strong>Settings > Apps > FreeISP WA > three dots menu > Allow restricted settings</strong>. This is required for the permissions to work.
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-secondary" onclick="tourNext(1)"><i class="bi bi-arrow-left"></i> Back</button>
-                            <button class="btn btn-success" onclick="tourNext(3)">Next <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tourStep3" class="tour-step d-none">
-                    <div class="p-4">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">2</span>
-                            <h5 class="mb-0">Configure the App</h5>
-                        </div>
-                        <div class="ms-5">
-                            <p>Open the app and enter these details:</p>
-                            <table class="table table-sm table-bordered small">
-                                <tr><td class="fw-bold" style="width:120px;">Server URL</td><td><code><?= htmlspecialchars($serverBase) ?></code></td></tr>
-                                <tr><td class="fw-bold">API Key</td><td>Copy from the top of this dashboard <i class="bi bi-arrow-up"></i></td></tr>
-                            </table>
-                            <p>Then enable all three permissions:</p>
-                            <ul class="small">
-                                <li><strong>Accessibility Service</strong> — sends messages for new contacts</li>
-                                <li><strong>Notification Listener</strong> — enables silent background sending</li>
-                                <li><strong>Battery Optimization</strong> — keeps the app running</li>
-                            </ul>
-                        </div>
-                        <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-secondary" onclick="tourNext(2)"><i class="bi bi-arrow-left"></i> Back</button>
-                            <button class="btn btn-success" onclick="tourNext(4)">Next <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tourStep4" class="tour-step d-none">
-                    <div class="p-4">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">3</span>
-                            <h5 class="mb-0">Connect Your Billing System</h5>
-                        </div>
-                        <div class="ms-5">
-                            <p>Copy this URL and paste it into your billing system's WhatsApp notification settings:</p>
-                            <div class="bg-dark text-light rounded-3 p-3 mb-3" style="font-family: monospace; font-size: 12px; word-break: break-all;">
-                                <?= htmlspecialchars($serverBase) ?>/api.php?to=[number]&msg=[text]&apikey=<?= htmlspecialchars($userKey) ?>
-                            </div>
-                            <p class="small text-muted">Replace <code>[number]</code> with the customer's phone and <code>[text]</code> with your message. Your billing system should do this automatically.</p>
-                        </div>
-                        <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-secondary" onclick="tourNext(3)"><i class="bi bi-arrow-left"></i> Back</button>
-                            <button class="btn btn-success" onclick="tourNext(5)">Next <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tourStep5" class="tour-step d-none">
-                    <div class="p-4">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">4</span>
-                            <h5 class="mb-0">Important Tips</h5>
-                        </div>
-                        <div class="ms-5">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="bg-light rounded-3 p-3 h-100">
-                                        <i class="bi bi-wifi text-success"></i> <strong class="small">Keep Phone Online</strong>
-                                        <p class="small text-muted mb-0">Wi-Fi recommended. Phone must have internet at all times.</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="bg-light rounded-3 p-3 h-100">
-                                        <i class="bi bi-phone text-primary"></i> <strong class="small">Dedicated Phone</strong>
-                                        <p class="small text-muted mb-0">Use a separate phone for best results. WhatsApp may briefly open.</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="bg-light rounded-3 p-3 h-100">
-                                        <i class="bi bi-shield-check text-success"></i> <strong class="small">Moderate Volume</strong>
-                                        <p class="small text-muted mb-0">Best for PPPoE notifications. Be cautious with high hotspot volumes.</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="bg-light rounded-3 p-3 h-100">
-                                        <i class="bi bi-arrow-repeat text-warning"></i> <strong class="small">Auto-Retry</strong>
-                                        <p class="small text-muted mb-0">Failed messages can be retried from the dashboard.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-secondary" onclick="tourNext(4)"><i class="bi bi-arrow-left"></i> Back</button>
-                            <button class="btn btn-success btn-lg px-5" data-bs-dismiss="modal"><i class="bi bi-check-circle"></i> Got It, Let's Start!</button>
-                        </div>
-                    </div>
+            <div class="text-center p-5" style="background: linear-gradient(135deg, #075E54, #25D366); color: white;">
+                <i class="bi bi-whatsapp" style="font-size: 64px;"></i>
+                <h3 class="mt-3 fw-bold">Welcome to FreeISP Whatsapp Messaging!</h3>
+                <p class="opacity-75 mb-0">Let me show you around your dashboard.</p>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-muted">I'll walk you through each section and point at exactly where to click. Takes about 1 minute.</p>
+                <button class="btn btn-success btn-lg px-5" onclick="startTour()">Show Me Around <i class="bi bi-hand-index-thumb"></i></button>
+                <div class="mt-2">
+                    <button class="btn btn-link text-muted small" onclick="skipTour()">Skip, I'll figure it out</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<div id="tourOverlay" class="tour-overlay d-none"></div>
+<div id="tourTooltip" class="tour-tooltip d-none"></div>
+
 <script>
-function tourNext(step) {
-    document.querySelectorAll('.tour-step').forEach(function(el) { el.classList.add('d-none'); });
-    document.getElementById('tourStep' + step).classList.remove('d-none');
+var tourSteps = [
+    {
+        target: '#fullApiUrl',
+        targetParent: true,
+        arrow: 'bi-arrow-up-circle-fill',
+        step: 1,
+        title: 'Billing System URL',
+        desc: 'This is the <strong>full URL</strong> for your billing system. Click <strong>"Copy URL"</strong> then go to your billing system:<br><strong>Settings > General Settings > WhatsApp Notification</strong> and paste it there.',
+    },
+    {
+        target: '#apiKeyDisplay',
+        targetParent: true,
+        arrow: 'bi-arrow-up-circle-fill',
+        step: 2,
+        title: 'App API Key (Phone Only)',
+        desc: 'This API key goes into the <strong>FreeISP WA app</strong> on your phone. It links the phone to your account.<br><br><span class="text-danger"><i class="bi bi-exclamation-triangle"></i> This is NOT for your billing system. The billing system uses the full URL above.</span>',
+    },
+    {
+        target: 'input[name="wa_type_dash"]',
+        targetParent: true,
+        arrow: 'bi-arrow-up-circle-fill',
+        step: 3,
+        title: 'WhatsApp Type',
+        desc: 'Select which WhatsApp you have installed on your relay phone — <strong>WhatsApp</strong> or <strong>WhatsApp Business</strong>. Messages will be sent through whichever one you choose.',
+    },
+    {
+        target: '.sidebar a[href="installation.php"]',
+        arrow: 'bi-arrow-left-circle-fill',
+        step: 4,
+        title: 'Installation Guide',
+        desc: 'Click here to download the <strong>FreeISP WA</strong> Android app and follow the step-by-step installation instructions.<br><br><span class="text-warning"><i class="bi bi-exclamation-triangle"></i> After installing, go to <strong>Settings > Apps > FreeISP WA > three dots > Allow restricted settings</strong></span>',
+    },
+    {
+        target: '.sidebar a[href="messages.php"]',
+        arrow: 'bi-arrow-left-circle-fill',
+        step: 5,
+        title: 'Message History',
+        desc: 'View all your sent messages here. You can filter by status, retry failed messages, and track delivery.',
+    },
+];
+
+var currentTourStep = 0;
+
+function startTour() {
+    bootstrap.Modal.getInstance(document.getElementById('tourWelcome')).hide();
+    setTimeout(function() {
+        document.getElementById('tourOverlay').classList.remove('d-none');
+        showTourStep(0);
+    }, 400);
 }
+
+function skipTour() {
+    bootstrap.Modal.getInstance(document.getElementById('tourWelcome')).hide();
+}
+
+function showTourStep(index) {
+    // Remove old highlights
+    document.querySelectorAll('.tour-highlight').forEach(function(el) { el.classList.remove('tour-highlight'); });
+
+    if (index >= tourSteps.length) { endTour(); return; }
+    currentTourStep = index;
+    var step = tourSteps[index];
+
+    // Find and highlight target
+    var el = document.querySelector(step.target);
+    if (!el) { showTourStep(index + 1); return; }
+
+    var highlightEl = step.targetParent ? el.closest('.bg-dark, .rounded-3, div') : el;
+    highlightEl.classList.add('tour-highlight');
+
+    // Scroll into view
+    highlightEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Position tooltip
+    setTimeout(function() {
+        var rect = highlightEl.getBoundingClientRect();
+        var tooltip = document.getElementById('tourTooltip');
+        var isLast = index === tourSteps.length - 1;
+
+        tooltip.innerHTML = '<div class="d-flex align-items-start gap-3">' +
+            '<span class="step-badge">' + step.step + '</span>' +
+            '<div class="flex-grow-1">' +
+                '<div class="d-flex align-items-center gap-2 mb-2">' +
+                    '<i class="bi ' + step.arrow + ' tour-arrow"></i>' +
+                    '<span class="tour-title">' + step.title + '</span>' +
+                '</div>' +
+                '<div class="tour-desc mb-3">' + step.desc + '</div>' +
+                '<div class="d-flex justify-content-between align-items-center">' +
+                    '<span class="text-muted small">Step ' + step.step + ' of ' + tourSteps.length + '</span>' +
+                    '<div class="d-flex gap-2">' +
+                        (index > 0 ? '<button class="btn btn-outline-secondary btn-sm" onclick="showTourStep(' + (index-1) + ')"><i class="bi bi-arrow-left"></i> Back</button>' : '') +
+                        (isLast
+                            ? '<button class="btn btn-success btn-sm px-3" onclick="endTour()"><i class="bi bi-check-circle"></i> Done!</button>'
+                            : '<button class="btn btn-success btn-sm px-3" onclick="showTourStep(' + (index+1) + ')">Next <i class="bi bi-arrow-right"></i></button>') +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+        // Position below or to the right of the element
+        var top = rect.bottom + 16;
+        var left = Math.max(16, Math.min(rect.left, window.innerWidth - 440));
+
+        // If below viewport, place above
+        if (top + 200 > window.innerHeight) {
+            top = Math.max(16, rect.top - 220);
+        }
+
+        tooltip.style.top = top + 'px';
+        tooltip.style.left = left + 'px';
+        tooltip.classList.remove('d-none');
+    }, 300);
+}
+
+function endTour() {
+    document.querySelectorAll('.tour-highlight').forEach(function(el) { el.classList.remove('tour-highlight'); });
+    document.getElementById('tourOverlay').classList.add('d-none');
+    document.getElementById('tourTooltip').classList.add('d-none');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    new bootstrap.Modal(document.getElementById('tourModal')).show();
+    new bootstrap.Modal(document.getElementById('tourWelcome')).show();
 });
 </script>
 <?php endif; ?>
