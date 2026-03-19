@@ -1,6 +1,6 @@
 {
-    "versionCode": 16,
-    "versionName": "2.0.0",
+    "versionCode": 17,
+    "versionName": "2.0.1",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.0.0 - Complete UI Redesign:\n- Stunning dark mode interface\n- Glowing status indicators (green/red)\n- Modern card-based layout with rounded corners\n- WhatsApp green accent throughout\n- Premium tech-style design\n- All functionality unchanged"
+    "changelog": "v2.0.1 UI Redesign:\n- Clean WhatsApp-style light theme (like the dashboard)\n- Green header bar with white text\n- White cards on light grey background\n- Clear permission status: green=ON, red=OFF\n- Clean, readable, fresh design"
 }
