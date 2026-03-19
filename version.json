@@ -1,6 +1,6 @@
 {
-    "versionCode": 14,
-    "versionName": "1.7.2",
+    "versionCode": 15,
+    "versionName": "1.7.3",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.7.2 Fixes:\n- Fixed crash on Android 14/15 (foregroundServiceType required)\n- Added FOREGROUND_SERVICE_SPECIAL_USE permission\n- Added specialUse foreground service type for polling\n- Handles exact alarm permission denial on Android 14+"
+    "changelog": "v1.7.3 Fixes:\n- Fixed messages showing 'sent' instead of 'delivered'\n- Added setPackage on broadcasts (Android 13+ fix)\n- Status report retries 3 times if server unreachable\n- Notification shows whether server report succeeded"
 }
