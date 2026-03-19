@@ -631,7 +631,7 @@ $usersList = $stmt->fetchAll();
                 <div id="tourStep1" class="tour-step">
                     <div class="text-center p-5" style="background: linear-gradient(135deg, #075E54, #25D366); color: white;">
                         <i class="bi bi-whatsapp" style="font-size: 64px;"></i>
-                        <h3 class="mt-3 fw-bold">Welcome to <?= APP_NAME ?>!</h3>
+                        <h3 class="mt-3 fw-bold">Welcome to FreeISP Whatsapp Messaging!</h3>
                         <p class="opacity-75 mb-0">Let's get you set up in 4 easy steps.</p>
                     </div>
                     <div class="p-4 text-center">
