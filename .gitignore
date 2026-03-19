@@ -1,0 +1,17 @@
+# Build outputs
+.gradle/
+app/build/
+build/
+
+# IDE
+.idea/
+*.iml
+local.properties
+
+# Keystore (sensitive)
+keystore.jks
+
+# OS files
+.DS_Store
+Thumbs.db
+txt.txt

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FreeISPWA" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#075E54</item>
+        <item name="colorPrimaryVariant">#064E46</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#25D366</item>
+        <item name="colorSecondaryVariant">#128C7E</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        <item name="android:statusBarColor">#064E46</item>
+    </style>
+
+    <!-- Transparent theme for KeyguardUnlockActivity - no visible UI -->
+    <style name="Theme.Transparent" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

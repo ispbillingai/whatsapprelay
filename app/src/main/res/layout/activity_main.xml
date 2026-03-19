@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAFAFA">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="FreeISP WA"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#075E54"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="WhatsApp Message Relay Service"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Status Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="STATUS"
+                    android:textSize="12sp"
+                    android:textColor="#999999"
+                    android:letterSpacing="0.1" />
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_idle"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#F44336"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tvStats"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sent: 0 | Failed: 0 | Pending: 0"
+                    android:textSize="13sp"
+                    android:textColor="#666666"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Setup Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="SERVER SETTINGS"
+                    android:textSize="12sp"
+                    android:textColor="#999999"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:hint="@string/hint_server_url"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:boxBackgroundMode="outline"
+                    app:boxCornerRadiusBottomEnd="8dp"
+                    app:boxCornerRadiusBottomStart="8dp"
+                    app:boxCornerRadiusTopEnd="8dp"
+                    app:boxCornerRadiusTopStart="8dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etServerUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:hint="@string/hint_api_key"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:boxBackgroundMode="outline"
+                    app:boxCornerRadiusBottomEnd="8dp"
+                    app:boxCornerRadiusBottomStart="8dp"
+                    app:boxCornerRadiusTopEnd="8dp"
+                    app:boxCornerRadiusTopStart="8dp"
+                    app:endIconMode="password_toggle">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etApiKey"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Polling interval -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_polling_interval"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPollInterval"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="5"
+                        android:textAlignment="center"
+                        android:textSize="14sp"
+                        android:background="@android:drawable/editbox_background" />
+                </LinearLayout>
+
+                <!-- WhatsApp type selector -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_whatsapp_type"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp" />
+
+                <Spinner
+                    android:id="@+id/spinnerWhatsApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:entries="@array/whatsapp_types"
+                    android:background="@android:drawable/btn_dropdown"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_save_settings"
+                    android:layout_marginBottom="8dp"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTestConnection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_test_connection"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Permissions Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="PERMISSIONS"
+                    android:textSize="12sp"
+                    android:textColor="#999999"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tvAccessibilityStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Accessibility Service: NOT ENABLED"
+                    android:textSize="13sp"
+                    android:textColor="#F44336"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEnableAccessibility"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_enable_accessibility"
+                    android:backgroundTint="#FF9800"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:cornerRadius="8dp"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvNotifListenerStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Notification Listener: OFF"
+                    android:textSize="13sp"
+                    android:textColor="#F44336"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEnableNotifListener"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Notification Listener (Background Send)"
+                    android:backgroundTint="#2196F3"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:cornerRadius="8dp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBatteryOptimization"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_disable_battery_optimization"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Control Buttons -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStartService"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/btn_start_service"
+            android:textSize="16sp"
+            android:backgroundTint="#25D366"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            app:cornerRadius="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStopService"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/btn_stop_service"
+            android:backgroundTint="#F44336"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            app:cornerRadius="12dp"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnViewLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_view_logs"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            app:cornerRadius="8dp" />
+
+        <!-- App version and update -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:id="@+id/tvVersion"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="v1.0.0"
+                android:textSize="12sp"
+                android:textColor="#999999" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCheckUpdate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Check for Updates"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:textSize="12sp"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                app:icon="@android:drawable/stat_sys_download"
+                app:iconSize="16dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
