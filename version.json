@@ -1,6 +1,6 @@
 {
-    "versionCode": 17,
-    "versionName": "2.0.1",
+    "versionCode": 18,
+    "versionName": "2.0.2",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.0.1 UI Redesign:\n- Clean WhatsApp-style light theme (like the dashboard)\n- Green header bar with white text\n- White cards on light grey background\n- Clear permission status: green=ON, red=OFF\n- Clean, readable, fresh design"
+    "changelog": "v2.0.2: Cleaned up notification spam - only shows relay status and send/fail counts"
 }
