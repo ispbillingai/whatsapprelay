@@ -77,6 +77,26 @@ renderHeader('Installation Guide', 'installation');
         <div class="d-flex align-items-start gap-3 mb-4">
             <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">2</span>
             <div>
+                <h6 class="fw-bold mb-1">Disable Google Play Protect</h6>
+                <p class="mb-1">Google Play Protect may block installation of apps downloaded outside the Play Store. You <strong>must</strong> disable it first:</p>
+                <ol class="mb-2 small">
+                    <li>Open the <strong>Google Play Store</strong> app</li>
+                    <li>Tap your <strong>profile icon</strong> (top-right corner)</li>
+                    <li>Tap <strong>"Play Protect"</strong></li>
+                    <li>Tap the <strong>gear icon (<i class="bi bi-gear"></i>)</strong> in the top-right</li>
+                    <li>Turn <strong>OFF</strong> "Scan apps with Play Protect"</li>
+                    <li>Confirm by tapping <strong>"Turn off"</strong></li>
+                </ol>
+                <div class="alert alert-info py-2 small mb-0">
+                    <i class="bi bi-lightbulb-fill"></i> You can re-enable Play Protect after installing. The app is safe — it just isn't on the Play Store.
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="d-flex align-items-start gap-3 mb-4">
+            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">3</span>
+            <div>
                 <h6 class="fw-bold mb-1">Allow Installation from Unknown Sources</h6>
                 <p class="mb-1">When you try to install, Android will warn you about unknown sources:</p>
                 <ul class="mb-0 small">
@@ -87,9 +107,9 @@ renderHeader('Installation Guide', 'installation');
             </div>
         </div>
 
-        <!-- Step 3 -->
+        <!-- Step 4 -->
         <div class="d-flex align-items-start gap-3 mb-4">
-            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">3</span>
+            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">4</span>
             <div>
                 <h6 class="fw-bold mb-1">Allow Restricted Settings (Android 13+)</h6>
                 <p class="mb-1">This is <strong>required</strong> before you can enable the Accessibility Service and Notification Listener:</p>
@@ -108,9 +128,9 @@ renderHeader('Installation Guide', 'installation');
             </div>
         </div>
 
-        <!-- Step 4 -->
+        <!-- Step 5 -->
         <div class="d-flex align-items-start gap-3 mb-4">
-            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">4</span>
+            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">5</span>
             <div>
                 <h6 class="fw-bold mb-1">Open the App & Enter Server Details</h6>
                 <p class="mb-1">Launch FreeISP WA and fill in:</p>
@@ -118,15 +138,14 @@ renderHeader('Installation Guide', 'installation');
                     <tr><td class="fw-bold" style="width:130px;">Server URL</td><td><code>https://whatsapp.ispledger.com</code> (must start with https://)</td></tr>
                     <tr><td class="fw-bold">API Key</td><td>Copy from the <strong>Dashboard</strong> page (top of page)</td></tr>
                     <tr><td class="fw-bold">Poll Interval</td><td>How often to check for new messages (default: 5 seconds)</td></tr>
-                    <tr><td class="fw-bold">WhatsApp Type</td><td>Choose WhatsApp or WhatsApp Business depending on which is installed</td></tr>
                 </table>
-                <p class="mb-0 small">Tap <strong>"Save Settings"</strong>, then <strong>"Test Connection"</strong> to verify.</p>
+                <p class="mb-0 small">Tap <strong>"Save Settings"</strong>, then <strong>"Test Connection"</strong> to verify. The WhatsApp type (Personal or Business) is controlled from the dashboard.</p>
             </div>
         </div>
 
-        <!-- Step 5 -->
+        <!-- Step 6 -->
         <div class="d-flex align-items-start gap-3 mb-4">
-            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">5</span>
+            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">6</span>
             <div>
                 <h6 class="fw-bold mb-1">Enable Required Permissions</h6>
                 <p class="mb-2">The app needs three permissions. Enable them from within the app:</p>
@@ -155,14 +174,17 @@ renderHeader('Installation Guide', 'installation');
             </div>
         </div>
 
-        <!-- Step 6 -->
+        <!-- Step 7 -->
         <div class="d-flex align-items-start gap-3 mb-3">
-            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">6</span>
+            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:32px;height:32px;flex-shrink:0;">7</span>
             <div>
                 <h6 class="fw-bold mb-1">Start the Relay Service</h6>
                 <p class="mb-1">Tap the green <strong>"Start Relay Service"</strong> button. The app will poll for messages and send them automatically.</p>
                 <div class="alert alert-success py-2 small mb-0">
                     <i class="bi bi-check-circle-fill"></i> <strong>Done!</strong> You can minimize the app and use your phone normally. Messages will be sent in the background.
+                </div>
+                <div class="alert alert-warning py-2 small mt-2 mb-0">
+                    <i class="bi bi-arrow-repeat"></i> <strong>After updating the app:</strong> Open the app, tap <strong>"Stop Relay Service"</strong> and then tap <strong>"Start Relay Service"</strong> again. This ensures the new version is fully active.
                 </div>
             </div>
         </div>
