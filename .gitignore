@@ -16,6 +16,9 @@ txt.txt
 # Server folder (files are at repo root instead)
 server/
 
+# Server config (has DB credentials - differs per environment)
+config.php
+
 # OS files
 .DS_Store
 Thumbs.db
