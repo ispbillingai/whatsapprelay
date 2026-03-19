@@ -1,6 +1,6 @@
 {
-    "versionCode": 5,
-    "versionName": "1.4.0",
+    "versionCode": 6,
+    "versionName": "1.5.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.4.0 Updates:\n- Fixed: Polling now works reliably when screen is off (static alarm receiver)\n- Fixed: Wake lock on network fetch prevents CPU sleep during polling\n- Static PollAlarmReceiver survives even if service is killed by Android\n- Improved reliability for background message sending"
+    "changelog": "v1.5.0 Updates:\n- Fixed: Restored Handler-based polling for reliable screen-off operation\n- Dual polling: Handler (primary) + AlarmManager (Doze backup)\n- Message expiry reduced to 5 minutes to prevent pile-up"
 }
