@@ -1,6 +1,6 @@
 {
-    "versionCode": 15,
-    "versionName": "1.7.3",
+    "versionCode": 16,
+    "versionName": "2.0.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.7.3 Fixes:\n- Fixed messages showing 'sent' instead of 'delivered'\n- Added setPackage on broadcasts (Android 13+ fix)\n- Status report retries 3 times if server unreachable\n- Notification shows whether server report succeeded"
+    "changelog": "v2.0.0 - Complete UI Redesign:\n- Stunning dark mode interface\n- Glowing status indicators (green/red)\n- Modern card-based layout with rounded corners\n- WhatsApp green accent throughout\n- Premium tech-style design\n- All functionality unchanged"
 }
