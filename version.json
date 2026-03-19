@@ -1,6 +1,6 @@
 {
-    "versionCode": 9,
-    "versionName": "1.6.1",
+    "versionCode": 10,
+    "versionName": "1.6.2",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.6.1 Updates:\n- Removed WhatsApp type selector from app (now controlled from dashboard)\n- Added reminder: after update, stop and start relay service\n- Cleaner app interface"
+    "changelog": "v1.6.2: Auto-adds https:// if customer enters URL without it"
 }
