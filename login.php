@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'register') {
         $email = trim($_POST['email'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
         $password = $_POST['password'] ?? '';
         $confirm = $_POST['confirm_password'] ?? '';
         $tab = 'register';
@@ -46,8 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             } else {
                 $name = explode('@', $email)[0]; // use email prefix as name
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                $db->prepare('INSERT INTO users (name, email, password, role, is_active) VALUES (?, ?, ?, "user", 1)')
-                   ->execute([$name, $email, $hash]);
+                $phone = preg_replace('/[^0-9]/', '', $phone);
+                $db->prepare('INSERT INTO users (name, email, phone, password, role, is_active) VALUES (?, ?, ?, ?, "user", 1)')
+                   ->execute([$name, $email, $phone ?: null, $hash]);
 
                 // Auto-login after registration
                 if (login($email, $password)) {
@@ -60,19 +62,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'forgot') {
         $email = trim($_POST['email'] ?? '');
+        $newPass = $_POST['new_password'] ?? '';
+        $confirmPass = $_POST['confirm_new_password'] ?? '';
         $tab = 'forgot';
 
         if (empty($email)) {
             $error = 'Please enter your email address';
+        } elseif (empty($newPass) || strlen($newPass) < 6) {
+            $error = 'New password must be at least 6 characters';
+        } elseif ($newPass !== $confirmPass) {
+            $error = 'Passwords do not match';
         } else {
             $db = getDB();
             $user = $db->prepare('SELECT id FROM users WHERE email = ?');
             $user->execute([$email]);
             if ($user->fetch()) {
-                // Reset password to "admin"
-                $newHash = password_hash('admin', PASSWORD_DEFAULT);
-                $db->prepare('UPDATE users SET password = ? WHERE email = ?')->execute([$newHash, $email]);
-                $success = 'Your password has been reset to: <strong>admin</strong><br>Please login and change it in Settings.';
+                $newHash = password_hash($newPass, PASSWORD_DEFAULT);
+                $db->prepare('UPDATE users SET password = ?, must_change_password = 0 WHERE email = ?')->execute([$newHash, $email]);
+                $success = 'Your password has been reset successfully. You can now login with your new password.';
                 $tab = 'login';
             } else {
                 $error = 'No account found with this email address';
@@ -196,6 +203,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </div>
                     <div class="mb-3">
                         <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                            <input type="tel" class="form-control" name="phone" placeholder="Phone number (e.g. 254712345678)" pattern="[0-9+\s\-]{7,20}">
+                        </div>
+                        <small class="text-muted ms-1" style="font-size:11px;">For communication purposes only</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input type="password" class="form-control" name="password" placeholder="Password (min 6 characters)" required minlength="6">
                         </div>
@@ -223,11 +237,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small">Enter your email address. Your password will be reset to <strong>admin</strong>. You can change it after logging in.</p>
+                    <p class="text-muted small">Enter your email address and choose a new password.</p>
                     <form method="POST" action="">
                         <input type="hidden" name="action" value="forgot">
                         <div class="mb-3">
                             <input type="email" class="form-control" name="email" placeholder="Your email address" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="password" class="form-control" name="new_password" placeholder="New password (min 6 characters)" required minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <input type="password" class="form-control" name="confirm_new_password" placeholder="Confirm new password" required minlength="6">
                         </div>
                         <button type="submit" class="btn btn-login">
                             <i class="bi bi-arrow-counterclockwise"></i> Reset Password

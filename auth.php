@@ -15,6 +15,11 @@ function requireLogin() {
         header('Location: login.php');
         exit;
     }
+    // Force password change if flagged
+    if (!empty($_SESSION['must_change_password']) && basename($_SERVER['SCRIPT_NAME']) !== 'change-password.php') {
+        header('Location: change-password.php');
+        exit;
+    }
 }
 
 function getCurrentUser() {
@@ -27,7 +32,7 @@ function getCurrentUser() {
 
 function login($email, $password) {
     $db = getDB();
-    $stmt = $db->prepare('SELECT * FROM users WHERE email = ? AND is_active = 1');
+    $stmt = $db->prepare('SELECT *, IFNULL(must_change_password, 0) as must_change_password FROM users WHERE email = ? AND is_active = 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -35,6 +40,8 @@ function login($email, $password) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
+        $_SESSION['must_change_password'] = !empty($user['must_change_password']);
+        $_SESSION['is_first_login'] = empty($user['last_login']);
 
         // Update last login
         $db->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);

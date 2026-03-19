@@ -162,8 +162,12 @@ renderHeader('Dashboard', 'dashboard');
             <span class="badge bg-light text-dark"><i class="bi bi-check-circle-fill text-success"></i> Active</span>
         </div>
 
-        <div class="bg-dark bg-opacity-50 rounded-3 p-3 mb-3" style="font-family: monospace; font-size: 13px; word-break: break-all;">
+        <div class="bg-dark bg-opacity-50 rounded-3 p-3 mb-3 position-relative" style="font-family: monospace; font-size: 13px; word-break: break-all;">
+            <input type="hidden" id="fullApiUrl" value="<?= htmlspecialchars($serverBase) ?>/api.php?to=[number]&msg=[text]&apikey=<?= htmlspecialchars($userKey) ?>">
             <span class="text-warning"><?= htmlspecialchars($serverBase) ?>/api.php?to=</span><span class="text-info">[number]</span><span class="text-warning">&msg=</span><span class="text-info">[text]</span><span class="text-warning">&apikey=</span><span class="text-success"><?= htmlspecialchars($userKey) ?></span>
+            <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" onclick="copyUrl()" title="Copy Full URL">
+                <i class="bi bi-clipboard" id="copyUrlIcon"></i> <span id="copyUrlText" class="small">Copy URL</span>
+            </button>
         </div>
 
         <div class="row g-2 mb-3">
@@ -250,6 +254,16 @@ renderHeader('Dashboard', 'dashboard');
 <?php endif; ?>
 
 <script>
+function copyUrl() {
+    var url = document.getElementById('fullApiUrl').value;
+    navigator.clipboard.writeText(url).then(function() {
+        var icon = document.getElementById('copyUrlIcon');
+        var text = document.getElementById('copyUrlText');
+        icon.className = 'bi bi-check-lg text-success';
+        text.textContent = 'Copied!';
+        setTimeout(function() { icon.className = 'bi bi-clipboard'; text.textContent = 'Copy URL'; }, 2000);
+    });
+}
 function copyKey() {
     var input = document.getElementById('apiKeyDisplay');
     input.select();
@@ -606,5 +620,147 @@ $usersList = $stmt->fetchAll();
         <?php endif; ?>
     </div>
 </div>
+
+<?php if (!empty($_SESSION['is_first_login'])): $_SESSION['is_first_login'] = false; ?>
+<!-- First-time Tour Guide Modal -->
+<div class="modal fade" id="tourModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-body p-0">
+                <!-- Tour Steps -->
+                <div id="tourStep1" class="tour-step">
+                    <div class="text-center p-5" style="background: linear-gradient(135deg, #075E54, #25D366); color: white;">
+                        <i class="bi bi-whatsapp" style="font-size: 64px;"></i>
+                        <h3 class="mt-3 fw-bold">Welcome to <?= APP_NAME ?>!</h3>
+                        <p class="opacity-75 mb-0">Let's get you set up in 4 easy steps.</p>
+                    </div>
+                    <div class="p-4 text-center">
+                        <p class="text-muted">This guide will walk you through everything you need to start sending WhatsApp messages from your billing system.</p>
+                        <button class="btn btn-success btn-lg px-5" onclick="tourNext(2)">Let's Go <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <div id="tourStep2" class="tour-step d-none">
+                    <div class="p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">1</span>
+                            <h5 class="mb-0">Download & Install the App</h5>
+                        </div>
+                        <div class="ms-5">
+                            <p>Download the <strong>FreeISP WA</strong> Android app onto the phone you'll use for sending messages.</p>
+                            <div class="bg-light rounded-3 p-3 mb-3">
+                                <i class="bi bi-download text-success"></i> Go to <strong>Installation Guide</strong> in the sidebar for the download link and step-by-step instructions.
+                            </div>
+                            <div class="alert alert-warning py-2 small mb-0">
+                                <i class="bi bi-exclamation-triangle"></i> <strong>Important:</strong> After installing, go to <strong>Settings > Apps > FreeISP WA > three dots menu > Allow restricted settings</strong>. This is required for the permissions to work.
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-secondary" onclick="tourNext(1)"><i class="bi bi-arrow-left"></i> Back</button>
+                            <button class="btn btn-success" onclick="tourNext(3)">Next <i class="bi bi-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tourStep3" class="tour-step d-none">
+                    <div class="p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">2</span>
+                            <h5 class="mb-0">Configure the App</h5>
+                        </div>
+                        <div class="ms-5">
+                            <p>Open the app and enter these details:</p>
+                            <table class="table table-sm table-bordered small">
+                                <tr><td class="fw-bold" style="width:120px;">Server URL</td><td><code><?= htmlspecialchars($serverBase) ?></code></td></tr>
+                                <tr><td class="fw-bold">API Key</td><td>Copy from the top of this dashboard <i class="bi bi-arrow-up"></i></td></tr>
+                            </table>
+                            <p>Then enable all three permissions:</p>
+                            <ul class="small">
+                                <li><strong>Accessibility Service</strong> — sends messages for new contacts</li>
+                                <li><strong>Notification Listener</strong> — enables silent background sending</li>
+                                <li><strong>Battery Optimization</strong> — keeps the app running</li>
+                            </ul>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-secondary" onclick="tourNext(2)"><i class="bi bi-arrow-left"></i> Back</button>
+                            <button class="btn btn-success" onclick="tourNext(4)">Next <i class="bi bi-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tourStep4" class="tour-step d-none">
+                    <div class="p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">3</span>
+                            <h5 class="mb-0">Connect Your Billing System</h5>
+                        </div>
+                        <div class="ms-5">
+                            <p>Copy this URL and paste it into your billing system's WhatsApp notification settings:</p>
+                            <div class="bg-dark text-light rounded-3 p-3 mb-3" style="font-family: monospace; font-size: 12px; word-break: break-all;">
+                                <?= htmlspecialchars($serverBase) ?>/api.php?to=[number]&msg=[text]&apikey=<?= htmlspecialchars($userKey) ?>
+                            </div>
+                            <p class="small text-muted">Replace <code>[number]</code> with the customer's phone and <code>[text]</code> with your message. Your billing system should do this automatically.</p>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-secondary" onclick="tourNext(3)"><i class="bi bi-arrow-left"></i> Back</button>
+                            <button class="btn btn-success" onclick="tourNext(5)">Next <i class="bi bi-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tourStep5" class="tour-step d-none">
+                    <div class="p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:18px;">4</span>
+                            <h5 class="mb-0">Important Tips</h5>
+                        </div>
+                        <div class="ms-5">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="bg-light rounded-3 p-3 h-100">
+                                        <i class="bi bi-wifi text-success"></i> <strong class="small">Keep Phone Online</strong>
+                                        <p class="small text-muted mb-0">Wi-Fi recommended. Phone must have internet at all times.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light rounded-3 p-3 h-100">
+                                        <i class="bi bi-phone text-primary"></i> <strong class="small">Dedicated Phone</strong>
+                                        <p class="small text-muted mb-0">Use a separate phone for best results. WhatsApp may briefly open.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light rounded-3 p-3 h-100">
+                                        <i class="bi bi-shield-check text-success"></i> <strong class="small">Moderate Volume</strong>
+                                        <p class="small text-muted mb-0">Best for PPPoE notifications. Be cautious with high hotspot volumes.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light rounded-3 p-3 h-100">
+                                        <i class="bi bi-arrow-repeat text-warning"></i> <strong class="small">Auto-Retry</strong>
+                                        <p class="small text-muted mb-0">Failed messages can be retried from the dashboard.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-secondary" onclick="tourNext(4)"><i class="bi bi-arrow-left"></i> Back</button>
+                            <button class="btn btn-success btn-lg px-5" data-bs-dismiss="modal"><i class="bi bi-check-circle"></i> Got It, Let's Start!</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function tourNext(step) {
+    document.querySelectorAll('.tour-step').forEach(function(el) { el.classList.add('d-none'); });
+    document.getElementById('tourStep' + step).classList.remove('d-none');
+}
+document.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('tourModal')).show();
+});
+</script>
+<?php endif; ?>
 
 <?php renderFooter(); ?>

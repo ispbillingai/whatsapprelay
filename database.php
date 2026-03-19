@@ -33,6 +33,8 @@ function runMigrations() {
 
     $db = getDB();
     $migrations = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20) NULL AFTER email",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password TINYINT(1) DEFAULT 0 AFTER password",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_type ENUM('whatsapp', 'whatsapp_business') DEFAULT 'whatsapp' AFTER is_active",
         "CREATE TABLE IF NOT EXISTS subscriptions (
             id INT AUTO_INCREMENT PRIMARY KEY,
