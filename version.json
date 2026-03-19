@@ -1,6 +1,6 @@
 {
-    "versionCode": 11,
-    "versionName": "1.6.3",
+    "versionCode": 12,
+    "versionName": "1.7.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v1.6.3: Added accessibility setup guide popup with step-by-step instructions and direct link to app settings for allowing restricted settings"
+    "changelog": "v1.7.0 Updates:\n- Fixed: Accessibility service 'not responding' on slower phones\n- All event handling wrapped in try-catch to prevent crashes\n- Reduced event flooding with higher notification timeout\n- Faster exit from events when not sending\n- Limited tree traversal depth to prevent ANR"
 }
