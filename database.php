@@ -18,9 +18,8 @@ function getDB() {
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]
             );
-            // Set MySQL session timezone to match PHP timezone
-            $tz = date('P'); // e.g. "+03:00"
-            $pdo->exec("SET time_zone = '$tz'");
+            // Set MySQL session timezone to Africa/Nairobi (+03:00)
+            $pdo->exec("SET time_zone = '+03:00'");
         } catch (PDOException $e) {
             die('Database connection failed: ' . $e->getMessage());
         }
@@ -70,6 +69,9 @@ function runMigrations() {
             INDEX idx_device_id (device_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS device_id VARCHAR(64) NULL AFTER api_key_id",
+        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_accessibility TINYINT(1) DEFAULT 0",
+        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_notification TINYINT(1) DEFAULT 0",
+        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_battery TINYINT(1) DEFAULT 0",
     ];
 
     foreach ($migrations as $sql) {

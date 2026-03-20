@@ -384,14 +384,18 @@ if ($path === '/pending' && $method === 'GET') {
 
     // Auto-register/update device if device_id is provided
     if ($deviceId) {
+        $svcAccessibility = intval($_GET['svc_accessibility'] ?? 0);
+        $svcNotification = intval($_GET['svc_notification'] ?? 0);
+        $svcBattery = intval($_GET['svc_battery'] ?? 0);
+
         $devCheck = $db->prepare('SELECT id FROM devices WHERE device_id = ? AND user_id = ?');
         $devCheck->execute([$deviceId, $authUserId]);
         if ($devCheck->fetch()) {
-            $db->prepare('UPDATE devices SET last_seen = NOW(), device_name = ? WHERE device_id = ? AND user_id = ?')
-               ->execute([$deviceName, $deviceId, $authUserId]);
+            $db->prepare('UPDATE devices SET last_seen = NOW(), device_name = ?, svc_accessibility = ?, svc_notification = ?, svc_battery = ? WHERE device_id = ? AND user_id = ?')
+               ->execute([$deviceName, $svcAccessibility, $svcNotification, $svcBattery, $deviceId, $authUserId]);
         } else {
-            $db->prepare('INSERT INTO devices (user_id, device_id, device_name, last_seen) VALUES (?, ?, ?, NOW())')
-               ->execute([$authUserId, $deviceId, $deviceName]);
+            $db->prepare('INSERT INTO devices (user_id, device_id, device_name, svc_accessibility, svc_notification, svc_battery, last_seen) VALUES (?, ?, ?, ?, ?, ?, NOW())')
+               ->execute([$authUserId, $deviceId, $deviceName, $svcAccessibility, $svcNotification, $svcBattery]);
         }
     }
 

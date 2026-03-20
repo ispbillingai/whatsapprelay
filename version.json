@@ -1,6 +1,6 @@
 {
-    "versionCode": 21,
-    "versionName": "2.2.1",
+    "versionCode": 22,
+    "versionName": "2.3.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.2.1: FreeISP logo added as app icon, dashboard logo, sidebar brand, login page, and favicon"
+    "changelog": "v2.3.0:\n- Device service status badges (accessibility, notification, battery)\n- Server Status page for admins (CPU, RAM, disk, MySQL)\n- Fixed timezone display for message times\n- Device online status based on failures, not just time"
 }

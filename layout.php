@@ -120,6 +120,9 @@ function renderHeader($title, $activePage = '') {
             <a href="users.php" class="nav-link <?= $activePage === 'users' ? 'active' : '' ?>">
                 <i class="bi bi-people-fill"></i> Users
             </a>
+            <a href="server-status.php" class="nav-link <?= $activePage === 'server-status' ? 'active' : '' ?>">
+                <i class="bi bi-hdd-rack"></i> Server Status
+            </a>
             <?php endif; ?>
             <a href="installation.php" class="nav-link <?= $activePage === 'installation' ? 'active' : '' ?>">
                 <i class="bi bi-download"></i> Installation Guide

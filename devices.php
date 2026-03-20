@@ -55,7 +55,9 @@ if ($isAdminUser) {
     $stmt = $db->query(
         'SELECT d.*, u.name as user_name, u.email,
             (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs
+            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
+            (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
+            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "failed" AND created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)) as recent_failures
          FROM devices d
          LEFT JOIN users u ON d.user_id = u.id
          ORDER BY d.last_seen DESC'
@@ -64,7 +66,9 @@ if ($isAdminUser) {
     $stmt = $db->prepare(
         'SELECT d.*,
             (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs
+            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
+            (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
+            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "failed" AND created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)) as recent_failures
          FROM devices d
          WHERE d.user_id = ?
          ORDER BY d.last_seen DESC'
@@ -125,7 +129,7 @@ renderHeader('Devices', 'devices');
     <div class="col-sm-4">
         <div class="card text-center">
             <div class="card-body py-3">
-                <?php $online = count(array_filter($devices, fn($d) => $d['is_active'] && $d['last_seen'] && strtotime($d['last_seen']) > strtotime('-5 minutes'))); ?>
+                <?php $online = count(array_filter($devices, fn($d) => $d['is_active'] && $d['last_seen'] && ($d['recent_failures'] ?? 0) == 0)); ?>
                 <h3 class="mb-0 text-success"><?= $online ?></h3>
                 <small class="text-muted">Online Now</small>
             </div>
@@ -173,21 +177,35 @@ renderHeader('Devices', 'devices');
                 </thead>
                 <tbody>
                     <?php foreach ($devices as $dev):
-                        $isOnline = $dev['is_active'] && $dev['last_seen'] && strtotime($dev['last_seen']) > strtotime('-5 minutes');
+                        $hasRecentFailures = ($dev['recent_failures'] ?? 0) > 0;
+                        $isActive = $dev['is_active'] && $dev['last_seen'];
                         $shortId = substr($dev['device_id'], 0, 8);
                     ?>
                     <tr>
                         <td>
                             <?php if (!$dev['is_active']): ?>
                                 <span class="badge bg-secondary">Disabled</span>
-                            <?php elseif ($isOnline): ?>
+                            <?php elseif ($hasRecentFailures): ?>
+                                <span class="badge bg-danger">Offline</span>
+                            <?php elseif ($isActive): ?>
                                 <span class="badge bg-success">Online</span>
                             <?php else: ?>
-                                <span class="badge bg-warning text-dark">Offline</span>
+                                <span class="badge bg-warning text-dark">Unknown</span>
                             <?php endif; ?>
                         </td>
                         <td>
                             <strong><?= htmlspecialchars($dev['device_name']) ?></strong>
+                            <div class="d-flex gap-1 mt-1">
+                                <span class="badge bg-<?= ($dev['svc_accessibility'] ?? 0) ? 'success' : 'danger' ?> bg-opacity-75" style="font-size:9px;" title="Accessibility Service">
+                                    <i class="bi bi-hand-index"></i> <?= ($dev['svc_accessibility'] ?? 0) ? 'ON' : 'OFF' ?>
+                                </span>
+                                <span class="badge bg-<?= ($dev['svc_notification'] ?? 0) ? 'success' : 'danger' ?> bg-opacity-75" style="font-size:9px;" title="Notification Listener">
+                                    <i class="bi bi-bell"></i> <?= ($dev['svc_notification'] ?? 0) ? 'ON' : 'OFF' ?>
+                                </span>
+                                <span class="badge bg-<?= ($dev['svc_battery'] ?? 0) ? 'success' : 'secondary' ?> bg-opacity-75" style="font-size:9px;" title="Battery Optimization Disabled">
+                                    <i class="bi bi-battery-charging"></i> <?= ($dev['svc_battery'] ?? 0) ? 'OK' : 'OFF' ?>
+                                </span>
+                            </div>
                         </td>
                         <td><code class="small"><?= htmlspecialchars($shortId) ?>...</code></td>
                         <td>
@@ -247,6 +265,13 @@ renderHeader('Devices', 'devices');
         </div>
         <?php endif; ?>
     </div>
+</div>
+
+<div class="mt-3 small text-muted">
+    <i class="bi bi-info-circle"></i> <strong>Status guide:</strong>
+    <span class="badge bg-success">Online</span> = device is active with no recent failures.
+    <span class="badge bg-danger">Offline</span> = device has failed messages in the last 10 minutes.
+    Service badges under device name show which permissions are enabled (<span class="text-success">green</span> = ON, <span class="text-danger">red</span> = OFF). Open the app on the phone to update service statuses.
 </div>
 
 <?php renderFooter(); ?>
