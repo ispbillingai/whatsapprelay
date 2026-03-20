@@ -7,6 +7,9 @@ $db = getDB();
 $userId = $_SESSION['user_id'];
 $isAdminUser = isAdmin();
 
+error_log("=== DEVICES PAGE LOADED ===");
+error_log("User ID: $userId, isAdmin: " . ($isAdminUser ? 'yes' : 'no'));
+
 // Handle device actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $action = $_POST['action'] ?? '';
@@ -51,31 +54,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
 }
 
 // Fetch devices
-if ($isAdminUser) {
-    $stmt = $db->query(
-        'SELECT d.*, u.name as user_name, u.email,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
-            (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
-            (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
-         FROM devices d
-         LEFT JOIN users u ON d.user_id = u.id
-         ORDER BY d.last_seen DESC'
-    );
-} else {
-    $stmt = $db->prepare(
-        'SELECT d.*,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
-            (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
-            (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
-         FROM devices d
-         WHERE d.user_id = ?
-         ORDER BY d.last_seen DESC'
-    );
-    $stmt->execute([$userId]);
+error_log("Fetching devices...");
+try {
+    if ($isAdminUser) {
+        $stmt = $db->query(
+            'SELECT d.*, u.name as user_name, u.email,
+                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
+                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
+                (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
+                (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
+             FROM devices d
+             LEFT JOIN users u ON d.user_id = u.id
+             ORDER BY d.last_seen DESC'
+        );
+    } else {
+        $stmt = $db->prepare(
+            'SELECT d.*,
+                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
+                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
+                (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
+                (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
+             FROM devices d
+             WHERE d.user_id = ?
+             ORDER BY d.last_seen DESC'
+        );
+        $stmt->execute([$userId]);
+    }
+    $devices = $stmt->fetchAll();
+    error_log("Fetched " . count($devices) . " devices");
+    foreach ($devices as $i => $dev) {
+        error_log("Device[$i]: id={$dev['device_id']}, name={$dev['device_name']}, active={$dev['is_active']}, last_seen={$dev['last_seen']}, delivered={$dev['delivered']}, last_status={$dev['last_msg_status']}");
+    }
+} catch (Exception $e) {
+    error_log("DEVICE QUERY ERROR: " . $e->getMessage());
+    $devices = [];
 }
-$devices = $stmt->fetchAll();
 
 renderHeader('Devices', 'devices');
 ?>
