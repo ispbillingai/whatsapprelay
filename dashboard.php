@@ -130,29 +130,32 @@ try {
         ? "DATE_ADD(created_at, INTERVAL $offsetHours HOUR)"
         : "DATE_SUB(created_at, INTERVAL " . abs($offsetHours) . " HOUR)";
 
+    $hourGrp = "HOUR($localExpr)";
+    $dateGrp = "DATE($localExpr)";
+
     if ($chartPeriod === 'today') {
-        $chartSql = "SELECT CONCAT(HOUR($localExpr), ':00') as label,
+        $chartSql = "SELECT DATE_FORMAT(MIN($localExpr), '%H:00') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
          FROM messages WHERE created_at >= ? $userFilter
-         GROUP BY HOUR($localExpr) ORDER BY HOUR($localExpr) ASC";
+         GROUP BY $hourGrp ORDER BY $hourGrp ASC";
         array_unshift($chartParams2, $todayStartUTC);
     } elseif ($chartPeriod === 'week') {
-        $chartSql = "SELECT DATE_FORMAT($localExpr, '%a %d') as label,
+        $chartSql = "SELECT DATE_FORMAT(MIN($localExpr), '%a %d') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
          FROM messages WHERE created_at >= ? $userFilter
-         GROUP BY DATE($localExpr) ORDER BY DATE($localExpr) ASC";
+         GROUP BY $dateGrp ORDER BY $dateGrp ASC";
         array_unshift($chartParams2, $weekStartUTC);
     } else {
-        $chartSql = "SELECT DATE_FORMAT($localExpr, '%b %d') as label,
+        $chartSql = "SELECT DATE_FORMAT(MIN($localExpr), '%b %d') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
          FROM messages WHERE created_at >= ? $userFilter
-         GROUP BY DATE($localExpr) ORDER BY DATE($localExpr) ASC";
+         GROUP BY $dateGrp ORDER BY $dateGrp ASC";
         array_unshift($chartParams2, $monthStartUTC);
     }
     $chartStmt = $db->prepare($chartSql);
