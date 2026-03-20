@@ -114,15 +114,29 @@ try {
     $userFilter = $showAll ? '' : 'AND user_id = ?';
     $chartParams2 = $showAll ? [] : [$userId];
 
-    $chartSql = "SELECT {$cc['format']} as label,
-        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
-        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-        SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
-        COUNT(*) as total
-     FROM messages
-     WHERE {$cc['interval']} $userFilter
-     GROUP BY {$cc['group']}
-     ORDER BY MIN(created_at) ASC";
+    // Build chart query based on period
+    if ($chartPeriod === 'today') {
+        $chartSql = "SELECT CONCAT(HOUR(created_at), ':00') as label,
+            SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
+         FROM messages WHERE DATE(created_at) = CURDATE() $userFilter
+         GROUP BY HOUR(created_at) ORDER BY HOUR(created_at) ASC";
+    } elseif ($chartPeriod === 'week') {
+        $chartSql = "SELECT DATE_FORMAT(created_at, '%a %d') as label,
+            SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
+         FROM messages WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) $userFilter
+         GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC";
+    } else {
+        $chartSql = "SELECT DATE_FORMAT(created_at, '%b %d') as label,
+            SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
+         FROM messages WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) $userFilter
+         GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC";
+    }
     $chartStmt = $db->prepare($chartSql);
     $chartStmt->execute($chartParams2);
     $chartData = $chartStmt->fetchAll();
@@ -700,13 +714,14 @@ $usersList = $stmt->fetchAll();
     </div>
 </div>
 
+<!-- Debug: <?= count($chartData) ?> chart rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?> -->
 <script>
 (function() {
     var labels = <?= json_encode(array_column($chartData, 'label')) ?>;
     var delivered = <?= json_encode(array_map(fn($r) => (int)$r['delivered'], $chartData)) ?>;
     var failed = <?= json_encode(array_map(fn($r) => (int)$r['failed'], $chartData)) ?>;
     var expired = <?= json_encode(array_map(fn($r) => (int)$r['expired'], $chartData)) ?>;
-    var total = <?= json_encode(array_map(fn($r) => (int)$r['total'], $chartData)) ?>;
+    console.log('Chart data:', {labels: labels, delivered: delivered, failed: failed, expired: expired, rows: <?= count($chartData) ?>});
 
     new Chart(document.getElementById('mainChart'), {
         type: 'bar',

@@ -1,6 +1,6 @@
 {
-    "versionCode": 22,
-    "versionName": "2.3.0",
+    "versionCode": 23,
+    "versionName": "2.3.1",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.3.0:\n- Device service status badges (accessibility, notification, battery)\n- Server Status page for admins (CPU, RAM, disk, MySQL)\n- Fixed timezone display for message times\n- Device online status based on failures, not just time"
+    "changelog": "v2.3.1: Better error message for invalid/non-WhatsApp numbers"
 }
