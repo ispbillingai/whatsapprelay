@@ -232,8 +232,12 @@ renderHeader('Dashboard', 'dashboard');
                     <label class="form-check-label small text-white" for="waBalanced"><i class="bi bi-shuffle"></i> Load Balance (Both)</label>
                 </div>
             </div>
-            <div id="loadBalanceInfo" class="mt-2 small opacity-75" style="display: <?= ($userWaType ?? 'whatsapp') === 'load_balance' ? 'block' : 'none' ?>;">
-                <i class="bi bi-info-circle"></i> Messages will alternate between WhatsApp and WhatsApp Business to spread volume and reduce ban risk. Both apps must be installed on your relay phone.
+            <div id="loadBalanceInfo" class="mt-2 small" style="display: <?= ($userWaType ?? 'whatsapp') === 'load_balance' ? 'block' : 'none' ?>;">
+                <div class="bg-dark bg-opacity-50 rounded-3 p-2 mt-1">
+                    <p class="mb-1 opacity-75"><i class="bi bi-shield-check text-success"></i> <strong>Load Balancing reduces the risk of being banned</strong> by splitting messages between two WhatsApp accounts.</p>
+                    <p class="mb-1 opacity-75"><i class="bi bi-phone text-info"></i> Your relay phone must have <strong>both WhatsApp and WhatsApp Business</strong> installed, each with a <strong>different phone number</strong>.</p>
+                    <p class="mb-0 opacity-50"><i class="bi bi-shuffle"></i> Messages will alternate automatically: Message 1 → WhatsApp, Message 2 → Business, Message 3 → WhatsApp, etc.</p>
+                </div>
             </div>
         </div>
 

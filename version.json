@@ -1,6 +1,6 @@
 {
-    "versionCode": 18,
-    "versionName": "2.0.2",
+    "versionCode": 19,
+    "versionName": "2.1.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.0.2: Cleaned up notification spam - only shows relay status and send/fail counts"
+    "changelog": "v2.1.0: WhatsApp fallback - if one WhatsApp fails to open, automatically tries the other"
 }
