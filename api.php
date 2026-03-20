@@ -135,20 +135,23 @@ function assignDevice($userId, $waType = null) {
 
     if (count($compatibleDevices) === 1) return $compatibleDevices[0];
 
-    // Round-robin: pick the device with the fewest recent pending/sent messages
-    $placeholders = implode(',', array_fill(0, count($compatibleDevices), '?'));
-    $stmt = $db->prepare(
-        "SELECT d.device_id, COUNT(m.id) as msg_count
-         FROM devices d
-         LEFT JOIN messages m ON m.device_id = d.device_id AND m.status IN ('pending', 'sent') AND m.user_id = ?
-         WHERE d.device_id IN ($placeholders)
-         GROUP BY d.device_id
-         ORDER BY msg_count ASC, d.last_seen DESC
-         LIMIT 1"
+    // True round-robin: pick the device that DIDN'T send the last message
+    $lastDeviceStmt = $db->prepare(
+        'SELECT device_id FROM messages WHERE user_id = ? AND device_id IS NOT NULL ORDER BY id DESC LIMIT 1'
     );
-    $stmt->execute(array_merge([$userId], $compatibleDevices));
-    $result = $stmt->fetch();
-    return $result ? $result['device_id'] : $compatibleDevices[0];
+    $lastDeviceStmt->execute([$userId]);
+    $lastDeviceId = $lastDeviceStmt->fetchColumn();
+
+    // Pick the next device in the list after the last one used
+    if ($lastDeviceId) {
+        $idx = array_search($lastDeviceId, $compatibleDevices);
+        if ($idx !== false) {
+            $nextIdx = ($idx + 1) % count($compatibleDevices);
+            return $compatibleDevices[$nextIdx];
+        }
+    }
+
+    return $compatibleDevices[0];
 }
 
 // Log message action
