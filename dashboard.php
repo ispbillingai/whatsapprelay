@@ -103,38 +103,28 @@ $stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN 
 $stmt->execute($params);
 $recentMessages = $stmt->fetchAll();
 
-// Chart data: daily stats for the last 14 days
-if ($showAll) {
-    $chartStmt = $db->prepare(
-        "SELECT DATE(created_at) as day,
-            SUM(status = 'delivered') as delivered,
-            SUM(status = 'failed') as failed,
-            SUM(status = 'expired') as expired,
-            SUM(status = 'sent') as sent,
-            SUM(status = 'pending') as pending,
-            COUNT(*) as total
-         FROM messages
-         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-         GROUP BY DATE(created_at)
-         ORDER BY day ASC"
-    );
-    $chartStmt->execute();
-} else {
-    $chartStmt = $db->prepare(
-        "SELECT DATE(created_at) as day,
-            SUM(status = 'delivered') as delivered,
-            SUM(status = 'failed') as failed,
-            SUM(status = 'expired') as expired,
-            SUM(status = 'sent') as sent,
-            SUM(status = 'pending') as pending,
-            COUNT(*) as total
-         FROM messages
-         WHERE user_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-         GROUP BY DATE(created_at)
-         ORDER BY day ASC"
-    );
-    $chartStmt->execute([$userId]);
-}
+// Chart period
+$chartPeriod = $_GET['chart'] ?? 'today';
+$chartConfigs = [
+    'today'   => ['interval' => 'DATE(created_at) = CURDATE()', 'group' => "HOUR(created_at)", 'format' => "CONCAT(HOUR(created_at), ':00')", 'title' => 'Today (Hourly)'],
+    'week'    => ['interval' => 'created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)', 'group' => 'DATE(created_at)', 'format' => "DATE_FORMAT(created_at, '%a %d')", 'title' => 'This Week'],
+    'month'   => ['interval' => 'created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)', 'group' => 'DATE(created_at)', 'format' => "DATE_FORMAT(created_at, '%b %d')", 'title' => 'This Month'],
+];
+$cc = $chartConfigs[$chartPeriod] ?? $chartConfigs['today'];
+$userFilter = $showAll ? '' : 'AND user_id = ?';
+$chartParams2 = $showAll ? [] : [$userId];
+
+$chartSql = "SELECT {$cc['format']} as label,
+    SUM(status = 'delivered') as delivered,
+    SUM(status = 'failed') as failed,
+    SUM(status = 'expired') as expired,
+    COUNT(*) as total
+ FROM messages
+ WHERE {$cc['interval']} $userFilter
+ GROUP BY {$cc['group']}
+ ORDER BY MIN(created_at) ASC";
+$chartStmt = $db->prepare($chartSql);
+$chartStmt->execute($chartParams2);
 $chartData = $chartStmt->fetchAll();
 
 // Active API keys count
@@ -652,70 +642,109 @@ $usersList = $stmt->fetchAll();
 </div>
 <?php endif; ?>
 
-<!-- Message Charts -->
-<div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header py-3"><i class="bi bi-bar-chart"></i> Messages (Last 14 Days)</div>
-            <div class="card-body">
-                <canvas id="dailyChart" height="200"></canvas>
-            </div>
+<!-- Message Analytics -->
+<div class="card mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-graph-up"></i> Message Analytics — <?= $cc['title'] ?></span>
+        <div class="btn-group btn-group-sm">
+            <a href="?chart=today<?= $isAdminUser && $adminView ? '&view=admin' : '' ?>" class="btn <?= $chartPeriod === 'today' ? 'btn-wa' : 'btn-outline-secondary' ?>">Today</a>
+            <a href="?chart=week<?= $isAdminUser && $adminView ? '&view=admin' : '' ?>" class="btn <?= $chartPeriod === 'week' ? 'btn-wa' : 'btn-outline-secondary' ?>">This Week</a>
+            <a href="?chart=month<?= $isAdminUser && $adminView ? '&view=admin' : '' ?>" class="btn <?= $chartPeriod === 'month' ? 'btn-wa' : 'btn-outline-secondary' ?>">This Month</a>
         </div>
     </div>
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header py-3"><i class="bi bi-pie-chart"></i> Status Breakdown</div>
-            <div class="card-body">
-                <canvas id="statusChart" height="200"></canvas>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-8">
+                <canvas id="mainChart" height="220"></canvas>
+            </div>
+            <div class="col-lg-4">
+                <canvas id="statusChart" height="220"></canvas>
+                <div class="text-center mt-3">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="rounded-3 p-2" style="background:#e8f5e9;">
+                                <div class="fw-bold text-success"><?= number_format($statusCounts['delivered']) ?></div>
+                                <small class="text-muted">Delivered</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-2" style="background:#ffebee;">
+                                <div class="fw-bold text-danger"><?= number_format($statusCounts['failed']) ?></div>
+                                <small class="text-muted">Failed</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-2" style="background:#f3e5f5;">
+                                <div class="fw-bold" style="color:#9C27B0;"><?= number_format($statusCounts['expired']) ?></div>
+                                <small class="text-muted">Expired</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-2" style="background:#fff3e0;">
+                                <div class="fw-bold text-warning"><?= number_format($statusCounts['pending'] + ($statusCounts['sent'] ?? 0)) ?></div>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-var chartLabels = <?= json_encode(array_map(fn($r) => date('M d', strtotime($r['day'])), $chartData)) ?>;
-var chartDelivered = <?= json_encode(array_map(fn($r) => (int)$r['delivered'], $chartData)) ?>;
-var chartFailed = <?= json_encode(array_map(fn($r) => (int)$r['failed'], $chartData)) ?>;
-var chartExpired = <?= json_encode(array_map(fn($r) => (int)$r['expired'], $chartData)) ?>;
+(function() {
+    var labels = <?= json_encode(array_column($chartData, 'label')) ?>;
+    var delivered = <?= json_encode(array_map(fn($r) => (int)$r['delivered'], $chartData)) ?>;
+    var failed = <?= json_encode(array_map(fn($r) => (int)$r['failed'], $chartData)) ?>;
+    var expired = <?= json_encode(array_map(fn($r) => (int)$r['expired'], $chartData)) ?>;
+    var total = <?= json_encode(array_map(fn($r) => (int)$r['total'], $chartData)) ?>;
 
-// Daily bar chart
-if (document.getElementById('dailyChart')) {
-    new Chart(document.getElementById('dailyChart'), {
-        type: 'bar',
+    new Chart(document.getElementById('mainChart'), {
+        type: 'line',
         data: {
-            labels: chartLabels,
+            labels: labels,
             datasets: [
-                { label: 'Delivered', data: chartDelivered, backgroundColor: '#25D366', borderRadius: 4 },
-                { label: 'Failed', data: chartFailed, backgroundColor: '#F44336', borderRadius: 4 },
-                { label: 'Expired', data: chartExpired, backgroundColor: '#9C27B0', borderRadius: 4 }
+                { label: 'Delivered', data: delivered, borderColor: '#25D366', backgroundColor: 'rgba(37,211,102,0.15)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#25D366', borderWidth: 2 },
+                { label: 'Failed', data: failed, borderColor: '#F44336', backgroundColor: 'rgba(244,67,54,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#F44336', borderWidth: 2 },
+                { label: 'Expired', data: expired, borderColor: '#9C27B0', backgroundColor: 'rgba(156,39,176,0.08)', fill: true, tension: 0.4, pointRadius: 2, pointBackgroundColor: '#9C27B0', borderWidth: 1.5 },
+                { label: 'Total', data: total, borderColor: '#90A4AE', borderDash: [4,4], fill: false, tension: 0.4, pointRadius: 0, borderWidth: 1 }
             ]
         },
         options: {
-            responsive: true,
-            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } } },
-            scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 10 } } }
+            },
+            interaction: { intersect: false, mode: 'index' }
         }
     });
-}
 
-// Status pie chart
-if (document.getElementById('statusChart')) {
+    var dData = [<?= $statusCounts['delivered'] ?>, <?= $statusCounts['failed'] ?>, <?= $statusCounts['expired'] ?>, <?= $statusCounts['pending'] + ($statusCounts['sent'] ?? 0) ?>];
+    var hasData = dData.some(function(v) { return v > 0; });
+
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',
         data: {
-            labels: ['Delivered', 'Failed', 'Expired', 'Pending', 'Sent'],
+            labels: ['Delivered', 'Failed', 'Expired', 'Pending'],
             datasets: [{
-                data: [<?= $statusCounts['delivered'] ?>, <?= $statusCounts['failed'] ?>, <?= $statusCounts['expired'] ?>, <?= $statusCounts['pending'] ?>, <?= $statusCounts['sent'] ?? 0 ?>],
-                backgroundColor: ['#25D366', '#F44336', '#9C27B0', '#FF9800', '#2196F3'],
-                borderWidth: 0
+                data: hasData ? dData : [1],
+                backgroundColor: hasData ? ['#25D366', '#F44336', '#9C27B0', '#FF9800'] : ['#e0e0e0'],
+                borderWidth: 0,
+                cutout: '65%'
             }]
         },
         options: {
-            responsive: true,
-            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10 } } }
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: hasData }
+            }
         }
     });
-}
+})();
 </script>
 
 <!-- Recent Messages -->
