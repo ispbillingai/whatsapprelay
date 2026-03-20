@@ -215,29 +215,13 @@ renderHeader('Dashboard', 'dashboard');
             </div>
         </div>
 
-        <!-- WhatsApp type selector -->
+        <!-- Device setup prompt -->
         <div class="bg-dark bg-opacity-25 rounded-3 p-3 mb-3">
-            <div class="d-flex align-items-center gap-3 flex-wrap">
-                <span class="small opacity-75">Send via:</span>
-                <div class="form-check form-check-inline mb-0">
-                    <input class="form-check-input" type="radio" name="wa_type_dash" id="waPersonal" value="whatsapp" <?= ($userWaType ?? 'whatsapp') === 'whatsapp' ? 'checked' : '' ?> onchange="saveWaType(this.value)">
-                    <label class="form-check-label small text-white" for="waPersonal"><i class="bi bi-whatsapp"></i> WhatsApp Only</label>
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="small opacity-75">
+                    <i class="bi bi-phone-fill"></i> Configure which WhatsApp each device uses and enable load balancing from the <strong>Devices</strong> page.
                 </div>
-                <div class="form-check form-check-inline mb-0">
-                    <input class="form-check-input" type="radio" name="wa_type_dash" id="waBusiness" value="whatsapp_business" <?= ($userWaType ?? 'whatsapp') === 'whatsapp_business' ? 'checked' : '' ?> onchange="saveWaType(this.value)">
-                    <label class="form-check-label small text-white" for="waBusiness"><i class="bi bi-briefcase"></i> Business Only</label>
-                </div>
-                <div class="form-check form-check-inline mb-0">
-                    <input class="form-check-input" type="radio" name="wa_type_dash" id="waBalanced" value="load_balance" <?= ($userWaType ?? 'whatsapp') === 'load_balance' ? 'checked' : '' ?> onchange="saveWaType(this.value)">
-                    <label class="form-check-label small text-white" for="waBalanced"><i class="bi bi-shuffle"></i> Load Balance (Both)</label>
-                </div>
-            </div>
-            <div id="loadBalanceInfo" class="mt-2 small" style="display: <?= ($userWaType ?? 'whatsapp') === 'load_balance' ? 'block' : 'none' ?>;">
-                <div class="bg-dark bg-opacity-50 rounded-3 p-2 mt-1">
-                    <p class="mb-1 opacity-75"><i class="bi bi-shield-check text-success"></i> <strong>Load Balancing reduces the risk of being banned</strong> by splitting messages between two WhatsApp accounts.</p>
-                    <p class="mb-1 opacity-75"><i class="bi bi-phone text-info"></i> Your relay phone must have <strong>both WhatsApp and WhatsApp Business</strong> installed, each with a <strong>different phone number</strong>.</p>
-                    <p class="mb-0 opacity-50"><i class="bi bi-shuffle"></i> Messages will alternate automatically: Message 1 → WhatsApp, Message 2 → Business, Message 3 → WhatsApp, etc.</p>
-                </div>
+                <a href="devices.php" class="btn btn-sm btn-outline-light ms-3"><i class="bi bi-phone-fill"></i> Manage Devices</a>
             </div>
         </div>
 
@@ -338,10 +322,6 @@ function copyKey() {
     var icon = document.getElementById('copyIcon');
     icon.className = 'bi bi-check-lg text-success';
     setTimeout(function() { icon.className = 'bi bi-clipboard'; }, 2000);
-}
-function saveWaType(type) {
-    fetch('dashboard.php?set_wa_type=' + type).then(function() {});
-    document.getElementById('loadBalanceInfo').style.display = type === 'load_balance' ? 'block' : 'none';
 }
 function retryMessages(type) {
     if (!confirm('Are you sure you want to retry ' + (type === 'all' ? 'all failed & expired' : type) + ' messages?')) return;

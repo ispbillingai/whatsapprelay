@@ -79,12 +79,35 @@ renderHeader('Devices', 'devices');
 <!-- Info banner -->
 <div class="card mb-4 border-0" style="background: linear-gradient(135deg, #075E54, #128C7E); border-radius: 12px;">
     <div class="card-body p-4 text-white">
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3 mb-3">
             <i class="bi bi-phone-fill" style="font-size: 32px;"></i>
             <div>
                 <h5 class="mb-1">Multi-Device Relay</h5>
-                <p class="mb-0 small opacity-75">Install the FreeISP WA app on multiple phones to increase throughput and reliability. Devices register automatically when they start polling. Messages are distributed across all active devices.</p>
+                <p class="mb-0 small opacity-75">Install the FreeISP WA app on multiple phones to increase throughput and reliability. Devices register automatically when they start polling.</p>
             </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="bg-dark bg-opacity-25 rounded-3 p-3 h-100">
+                    <h6 class="small"><i class="bi bi-phone"></i> Per-Device WhatsApp</h6>
+                    <p class="small opacity-75 mb-0">Set each device to use <strong>WhatsApp Personal</strong>, <strong>WhatsApp Business</strong>, or <strong>Both</strong>. Messages are routed to the right device based on this setting.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="bg-dark bg-opacity-25 rounded-3 p-3 h-100">
+                    <h6 class="small"><i class="bi bi-shuffle"></i> Load Balancing</h6>
+                    <p class="small opacity-75 mb-0">When multiple devices are active, messages are <strong>distributed evenly</strong> across them. This reduces ban risk by spreading volume across different WhatsApp accounts.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="bg-dark bg-opacity-25 rounded-3 p-3 h-100">
+                    <h6 class="small"><i class="bi bi-arrow-repeat"></i> Auto-Failover</h6>
+                    <p class="small opacity-75 mb-0">If a device goes offline or fails to send within 3 minutes, messages are <strong>automatically reassigned</strong> to the next available device.</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 small opacity-50">
+            <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> For maximum protection, install both WhatsApp and WhatsApp Business on each phone with <strong>different phone numbers</strong>. Set one device to "Personal" and another to "Business" to spread messages across 2 accounts.
         </div>
     </div>
 </div>
