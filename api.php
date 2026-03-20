@@ -106,52 +106,119 @@ function incrementUsage($userId) {
 // Pick the next active device for round-robin assignment
 // $waType: the whatsapp_type of the message being queued
 // Returns device_id or null if no active devices
+/**
+ * Assign device using full rotation of device+type combinations.
+ *
+ * Example with: Device A (Both), Device B (Business)
+ * Rotation: A-WA → A-Biz → B-Biz → A-WA → A-Biz → B-Biz ...
+ *
+ * Returns ['device_id' => string, 'whatsapp_type' => string] or null
+ */
 function assignDevice($userId, $waType = null) {
     $db = getDB();
-    // Get active devices that were seen in the last 5 minutes
     $stmt = $db->prepare(
         'SELECT device_id, whatsapp_type FROM devices
          WHERE user_id = ? AND is_active = 1 AND last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-         ORDER BY last_seen ASC'
+         ORDER BY device_name ASC'
     );
     $stmt->execute([$userId]);
     $allDevices = $stmt->fetchAll();
 
     if (empty($allDevices)) return null;
 
-    // Filter devices that support the message's whatsapp_type
-    $compatibleDevices = [];
+    // Build full rotation list: each device+type slot
+    $slots = [];
     foreach ($allDevices as $dev) {
         $devType = $dev['whatsapp_type'] ?? 'both';
-        if ($devType === 'both' || $devType === $waType || $waType === null) {
-            $compatibleDevices[] = $dev['device_id'];
+        if ($devType === 'both') {
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp'];
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp_business'];
+        } elseif ($devType === 'whatsapp') {
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp'];
+        } elseif ($devType === 'whatsapp_business') {
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp_business'];
         }
     }
 
-    // Fallback to all devices if none match the type
-    if (empty($compatibleDevices)) {
-        $compatibleDevices = array_column($allDevices, 'device_id');
-    }
+    if (empty($slots)) return $allDevices[0]['device_id'];
+    if (count($slots) === 1) return $slots[0]['device_id'];
 
-    if (count($compatibleDevices) === 1) return $compatibleDevices[0];
-
-    // True round-robin: pick the device that DIDN'T send the last message
-    $lastDeviceStmt = $db->prepare(
-        'SELECT device_id FROM messages WHERE user_id = ? AND device_id IS NOT NULL ORDER BY id DESC LIMIT 1'
+    // Find last sent message's device+type to determine next slot
+    $lastStmt = $db->prepare(
+        'SELECT device_id, whatsapp_type FROM messages WHERE user_id = ? AND device_id IS NOT NULL ORDER BY id DESC LIMIT 1'
     );
-    $lastDeviceStmt->execute([$userId]);
-    $lastDeviceId = $lastDeviceStmt->fetchColumn();
+    $lastStmt->execute([$userId]);
+    $last = $lastStmt->fetch();
 
-    // Pick the next device in the list after the last one used
-    if ($lastDeviceId) {
-        $idx = array_search($lastDeviceId, $compatibleDevices);
-        if ($idx !== false) {
-            $nextIdx = ($idx + 1) % count($compatibleDevices);
-            return $compatibleDevices[$nextIdx];
+    if ($last) {
+        // Find matching slot and pick next
+        $matchIdx = -1;
+        foreach ($slots as $i => $slot) {
+            if ($slot['device_id'] === $last['device_id'] && $slot['wa_type'] === $last['whatsapp_type']) {
+                $matchIdx = $i;
+                break;
+            }
+        }
+        $nextIdx = ($matchIdx + 1) % count($slots);
+        return $slots[$nextIdx]['device_id'];
+    }
+
+    return $slots[0]['device_id'];
+}
+
+/**
+ * Get the WhatsApp type that should be used for the assigned device.
+ * Uses the same rotation logic as assignDevice.
+ */
+function getDeviceWaType($userId, $assignedDevice) {
+    $db = getDB();
+
+    // Get device setting
+    $stmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
+    $stmt->execute([$assignedDevice]);
+    $devType = $stmt->fetchColumn() ?: 'both';
+
+    if ($devType !== 'both') {
+        return ($devType === 'whatsapp_business') ? 'whatsapp_business' : 'whatsapp';
+    }
+
+    // Device is "both" - check rotation to pick the right type
+    $slots = [];
+    $devStmt = $db->prepare(
+        'SELECT device_id, whatsapp_type FROM devices
+         WHERE user_id = ? AND is_active = 1 AND last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+         ORDER BY device_name ASC'
+    );
+    $devStmt->execute([$userId]);
+    foreach ($devStmt->fetchAll() as $dev) {
+        $dt = $dev['whatsapp_type'] ?? 'both';
+        if ($dt === 'both') {
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp'];
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp_business'];
+        } else {
+            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => $dt];
         }
     }
 
-    return $compatibleDevices[0];
+    $lastStmt = $db->prepare(
+        'SELECT device_id, whatsapp_type FROM messages WHERE user_id = ? AND device_id IS NOT NULL ORDER BY id DESC LIMIT 1'
+    );
+    $lastStmt->execute([$userId]);
+    $last = $lastStmt->fetch();
+
+    if ($last) {
+        $matchIdx = -1;
+        foreach ($slots as $i => $slot) {
+            if ($slot['device_id'] === $last['device_id'] && $slot['wa_type'] === $last['whatsapp_type']) {
+                $matchIdx = $i;
+                break;
+            }
+        }
+        $nextIdx = ($matchIdx + 1) % count($slots);
+        return $slots[$nextIdx]['wa_type'];
+    }
+
+    return 'whatsapp';
 }
 
 // Log message action
@@ -247,16 +314,10 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
     $assignedDevice = null;
     try { $assignedDevice = assignDevice($auth['user_id'], $whatsappType); } catch (Exception $e) {}
 
-    // Override whatsapp_type to match the assigned device's setting
+    // Override whatsapp_type to match device rotation
     if ($assignedDevice) {
         try {
-            $devTypeStmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
-            $devTypeStmt->execute([$assignedDevice]);
-            $devType = $devTypeStmt->fetchColumn();
-            if ($devType && $devType !== 'both') {
-                // Device is set to specific type — use that type regardless
-                $whatsappType = ($devType === 'whatsapp_business') ? 'whatsapp_business' : 'whatsapp';
-            }
+            $whatsappType = getDeviceWaType($auth['user_id'], $assignedDevice);
         } catch (Exception $e) {}
     }
 
@@ -334,15 +395,10 @@ if ($path === '/send' && $method === 'POST') {
     $assignedDevice = null;
     try { $assignedDevice = assignDevice($authUserId, $whatsappType); } catch (Exception $e) {}
 
-    // Override whatsapp_type to match device setting
+    // Override whatsapp_type to match device rotation
     if ($assignedDevice) {
         try {
-            $devTypeStmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
-            $devTypeStmt->execute([$assignedDevice]);
-            $devType = $devTypeStmt->fetchColumn();
-            if ($devType && $devType !== 'both') {
-                $whatsappType = ($devType === 'whatsapp_business') ? 'whatsapp_business' : 'whatsapp';
-            }
+            $whatsappType = getDeviceWaType($authUserId, $assignedDevice);
         } catch (Exception $e) {}
     }
 
