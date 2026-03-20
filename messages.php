@@ -53,7 +53,7 @@ $totalPages = ceil($total / $perPage);
 // Fetch messages
 $params[] = $perPage;
 $params[] = $offset;
-$stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $whereClause ORDER BY m.created_at DESC LIMIT ? OFFSET ?");
+$stmt = $db->prepare("SELECT m.*, u.name as user_name, d.device_name FROM messages m LEFT JOIN users u ON m.user_id = u.id LEFT JOIN devices d ON m.device_id = d.device_id $whereClause ORDER BY m.created_at DESC LIMIT ? OFFSET ?");
 $stmt->execute($params);
 $messages = $stmt->fetchAll();
 
@@ -146,6 +146,7 @@ renderHeader('Messages', 'messages');
                         <th>Type</th>
                         <th>Status</th>
                         <th>Retries</th>
+                        <th>Device</th>
                         <th>Created</th>
                         <th>Sent At</th>
                         <?php if ($isAdminUser): ?><th>User</th><?php endif; ?>
@@ -172,6 +173,7 @@ renderHeader('Messages', 'messages');
                         </td>
                         <td><span class="badge-status badge-<?= $msg['status'] ?>"><?= ucfirst($msg['status']) ?></span></td>
                         <td class="text-center"><?= $msg['retry_count'] ?></td>
+                        <td class="small text-muted"><?= htmlspecialchars($msg['device_name'] ?? '-') ?></td>
                         <td class="text-muted small text-nowrap"><?= fmtTime($msg['created_at']) ?></td>
                         <td class="text-muted small"><?= fmtTime($msg['sent_at']) ?></td>
                         <?php if ($isAdminUser): ?>
