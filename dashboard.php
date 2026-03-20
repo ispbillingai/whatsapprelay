@@ -105,27 +105,33 @@ $recentMessages = $stmt->fetchAll();
 
 // Chart period
 $chartPeriod = $_GET['chart'] ?? 'today';
-$chartConfigs = [
-    'today'   => ['interval' => 'DATE(created_at) = CURDATE()', 'group' => "HOUR(created_at)", 'format' => "CONCAT(HOUR(created_at), ':00')", 'title' => 'Today (Hourly)'],
-    'week'    => ['interval' => 'created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)', 'group' => 'DATE(created_at)', 'format' => "DATE_FORMAT(created_at, '%a %d')", 'title' => 'This Week'],
-    'month'   => ['interval' => 'created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)', 'group' => 'DATE(created_at)', 'format' => "DATE_FORMAT(created_at, '%b %d')", 'title' => 'This Month'],
-];
-$cc = $chartConfigs[$chartPeriod] ?? $chartConfigs['today'];
-$userFilter = $showAll ? '' : 'AND user_id = ?';
-$chartParams2 = $showAll ? [] : [$userId];
+$chartData = [];
+try {
+    $chartConfigs = [
+        'today'   => ['interval' => 'DATE(created_at) = CURDATE()', 'group' => 'HOUR(created_at)', 'format' => "CONCAT(HOUR(created_at), ':00')", 'title' => 'Today (Hourly)'],
+        'week'    => ['interval' => 'created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)', 'group' => 'DATE(created_at)', 'format' => "DATE_FORMAT(created_at, '%a %d')", 'title' => 'This Week'],
+        'month'   => ['interval' => 'created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)', 'group' => 'DATE(created_at)', 'format' => "DATE_FORMAT(created_at, '%b %d')", 'title' => 'This Month'],
+    ];
+    $cc = $chartConfigs[$chartPeriod] ?? $chartConfigs['today'];
+    $userFilter = $showAll ? '' : 'AND user_id = ?';
+    $chartParams2 = $showAll ? [] : [$userId];
 
-$chartSql = "SELECT {$cc['format']} as label,
-    SUM(status = 'delivered') as delivered,
-    SUM(status = 'failed') as failed,
-    SUM(status = 'expired') as expired,
-    COUNT(*) as total
- FROM messages
- WHERE {$cc['interval']} $userFilter
- GROUP BY {$cc['group']}
- ORDER BY MIN(created_at) ASC";
-$chartStmt = $db->prepare($chartSql);
-$chartStmt->execute($chartParams2);
-$chartData = $chartStmt->fetchAll();
+    $chartSql = "SELECT {$cc['format']} as label,
+        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
+        COUNT(*) as total
+     FROM messages
+     WHERE {$cc['interval']} $userFilter
+     GROUP BY {$cc['group']}
+     ORDER BY MIN(created_at) ASC";
+    $chartStmt = $db->prepare($chartSql);
+    $chartStmt->execute($chartParams2);
+    $chartData = $chartStmt->fetchAll();
+} catch (Exception $e) {
+    error_log("Chart query error: " . $e->getMessage());
+    $chartData = [];
+}
 
 // Active API keys count
 $where = $showAll ? "WHERE is_active = 1" : "WHERE is_active = 1 AND user_id = ?";
