@@ -115,20 +115,13 @@ try {
     $userFilter = $showAll ? '' : 'AND user_id = ?';
     $chartParams2 = $showAll ? [] : [$userId];
 
-    // Build chart query - convert local dates to UTC for DB comparison
-    $utcOffset = date('Z'); // seconds offset from UTC
-    $todayStartUTC = gmdate('Y-m-d H:i:s', strtotime('today') );
-    $weekStartUTC = gmdate('Y-m-d H:i:s', strtotime('-7 days midnight'));
-    $monthStartUTC = gmdate('Y-m-d H:i:s', strtotime('-30 days midnight'));
+    // Date ranges — server stores times as-is (local time)
+    $todayStartUTC = date('Y-m-d 00:00:00');
+    $weekStartUTC = date('Y-m-d 00:00:00', strtotime('-7 days'));
+    $monthStartUTC = date('Y-m-d 00:00:00', strtotime('-30 days'));
 
-    // Add timezone offset hours to DB times for correct local grouping
-    $offsetHours = intval(date('Z') / 3600);
-    if ($offsetHours === 0 && date_default_timezone_get() === 'Africa/Nairobi') {
-        $offsetHours = 3; // Fallback for Africa/Nairobi
-    }
-    $localExpr = $offsetHours >= 0
-        ? "DATE_ADD(created_at, INTERVAL $offsetHours HOUR)"
-        : "DATE_SUB(created_at, INTERVAL " . abs($offsetHours) . " HOUR)";
+    // DB stores local time, no conversion needed
+    $localExpr = "created_at";
 
     $hourGrp = "HOUR($localExpr)";
     $dateGrp = "DATE($localExpr)";
@@ -161,6 +154,23 @@ try {
     $chartStmt = $db->prepare($chartSql);
     $chartStmt->execute($chartParams2);
     $chartData = $chartStmt->fetchAll();
+
+    // Period-specific status counts for the stat boxes
+    $dateParam = $chartPeriod === 'today' ? $todayStartUTC : ($chartPeriod === 'week' ? $weekStartUTC : $monthStartUTC);
+    $periodCountSql = "SELECT
+        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
+        SUM(CASE WHEN status IN ('pending','sent') THEN 1 ELSE 0 END) as pending
+     FROM messages WHERE created_at >= ? $userFilter";
+    $periodParams = $showAll ? [$dateParam] : [$dateParam, $userId];
+    $pcStmt = $db->prepare($periodCountSql);
+    $pcStmt->execute($periodParams);
+    $periodCounts = $pcStmt->fetch();
+    $pDelivered = (int)($periodCounts['delivered'] ?? 0);
+    $pFailed = (int)($periodCounts['failed'] ?? 0);
+    $pExpired = (int)($periodCounts['expired'] ?? 0);
+    $pPending = (int)($periodCounts['pending'] ?? 0);
 } catch (Exception $e) {
     error_log("Chart query error: " . $e->getMessage());
     $chartError = $e->getMessage();
@@ -683,105 +693,92 @@ $usersList = $stmt->fetchAll();
 <?php endif; ?>
 
 <!-- Message Analytics -->
-<div class="card mb-4">
-    <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-graph-up"></i> Message Analytics — <?= $cc['title'] ?></span>
+<?php $periodLabel = $cc['title']; $pTotal = $pDelivered + $pFailed + $pExpired + $pPending; ?>
+<div class="card mb-4" style="border:none; border-radius:16px; overflow:hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background:white; border-bottom:1px solid #f0f0f0;">
+        <div>
+            <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up text-success"></i> Message Analytics</h6>
+            <small class="text-muted"><?= $periodLabel ?> — <?= number_format($pTotal) ?> messages</small>
+        </div>
         <div class="btn-group btn-group-sm">
-            <a href="?chart=today<?= $isAdminUser && $adminView ? '&view=admin' : '' ?>" class="btn <?= $chartPeriod === 'today' ? 'btn-wa' : 'btn-outline-secondary' ?>">Today</a>
-            <a href="?chart=week<?= $isAdminUser && $adminView ? '&view=admin' : '' ?>" class="btn <?= $chartPeriod === 'week' ? 'btn-wa' : 'btn-outline-secondary' ?>">This Week</a>
-            <a href="?chart=month<?= $isAdminUser && $adminView ? '&view=admin' : '' ?>" class="btn <?= $chartPeriod === 'month' ? 'btn-wa' : 'btn-outline-secondary' ?>">This Month</a>
+            <?php $vp = $isAdminUser && $adminView ? '&view=admin' : ''; ?>
+            <a href="?chart=today<?= $vp ?>" class="btn <?= $chartPeriod === 'today' ? 'btn-success' : 'btn-outline-secondary' ?> rounded-start-pill">Today</a>
+            <a href="?chart=week<?= $vp ?>" class="btn <?= $chartPeriod === 'week' ? 'btn-success' : 'btn-outline-secondary' ?>">This Week</a>
+            <a href="?chart=month<?= $vp ?>" class="btn <?= $chartPeriod === 'month' ? 'btn-success' : 'btn-outline-secondary' ?> rounded-end-pill">This Month</a>
         </div>
     </div>
-    <div class="card-body">
-        <div class="row">
+
+    <!-- Period stat summary row -->
+    <div class="row g-0 text-center" style="border-bottom:1px solid #f0f0f0;">
+        <div class="col-3 py-3" style="border-right:1px solid #f0f0f0;">
+            <div class="fs-4 fw-bold text-success"><?= number_format($pDelivered) ?></div>
+            <small class="text-muted"><i class="bi bi-check-circle-fill text-success"></i> Delivered</small>
+        </div>
+        <div class="col-3 py-3" style="border-right:1px solid #f0f0f0;">
+            <div class="fs-4 fw-bold text-danger"><?= number_format($pFailed) ?></div>
+            <small class="text-muted"><i class="bi bi-x-circle-fill text-danger"></i> Failed</small>
+        </div>
+        <div class="col-3 py-3" style="border-right:1px solid #f0f0f0;">
+            <div class="fs-4 fw-bold" style="color:#9C27B0;"><?= number_format($pExpired) ?></div>
+            <small class="text-muted"><i class="bi bi-clock-fill" style="color:#9C27B0;"></i> Expired</small>
+        </div>
+        <div class="col-3 py-3">
+            <div class="fs-4 fw-bold text-warning"><?= number_format($pPending) ?></div>
+            <small class="text-muted"><i class="bi bi-hourglass-split text-warning"></i> Pending</small>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        <div class="row align-items-center">
             <div class="col-lg-8">
-                <div style="position:relative; height:250px;">
+                <div style="position:relative; height:280px;">
                     <canvas id="mainChart"></canvas>
                 </div>
             </div>
             <div class="col-lg-4">
-                <div style="position:relative; height:200px;">
+                <div style="position:relative; height:250px;">
                     <canvas id="statusChart"></canvas>
                 </div>
-                <div class="text-center mt-3">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="rounded-3 p-2" style="background:#e8f5e9;">
-                                <div class="fw-bold text-success"><?= number_format($statusCounts['delivered']) ?></div>
-                                <small class="text-muted">Delivered</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="rounded-3 p-2" style="background:#ffebee;">
-                                <div class="fw-bold text-danger"><?= number_format($statusCounts['failed']) ?></div>
-                                <small class="text-muted">Failed</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="rounded-3 p-2" style="background:#f3e5f5;">
-                                <div class="fw-bold" style="color:#9C27B0;"><?= number_format($statusCounts['expired']) ?></div>
-                                <small class="text-muted">Expired</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="rounded-3 p-2" style="background:#fff3e0;">
-                                <div class="fw-bold text-warning"><?= number_format($statusCounts['pending'] + ($statusCounts['sent'] ?? 0)) ?></div>
-                                <small class="text-muted">Pending</small>
-                            </div>
-                        </div>
-                    </div>
+                <?php if ($pTotal > 0): $successRate = round(($pDelivered / $pTotal) * 100, 1); ?>
+                <div class="text-center mt-2">
+                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 fs-6"><?= $successRate ?>% success rate</span>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Debug: <?= count($chartData) ?> rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?>, offset=<?= $offsetHours ?>h -->
-<?php
-// Direct test - does a simple query with same params work?
-$testSql = "SELECT COUNT(*) as cnt FROM messages WHERE created_at >= ? " . ($showAll ? '' : 'AND user_id = ?');
-$testParams = $showAll ? [$chartParams2[0]] : [$chartParams2[0], $chartParams2[1]];
-$testStmt = $db->prepare($testSql);
-$testStmt->execute($testParams);
-$testCount = $testStmt->fetch()['cnt'];
-
-// Also test with NO filters at all
-$rawCount = $db->query("SELECT COUNT(*) as cnt FROM messages WHERE created_at >= '2026-01-01'")->fetch()['cnt'];
-$rawUser = $db->query("SELECT COUNT(*) as cnt FROM messages WHERE user_id = $userId")->fetch()['cnt'];
-?>
-<!-- Test: filterCount=<?= $testCount ?>, param0=<?= $chartParams2[0] ?>, rawAll=<?= $rawCount ?>, rawUser=<?= $rawUser ?>, chartError=<?= isset($chartError) ? $chartError : 'none' ?> -->
 <script>
 (function() {
     var labels = <?= json_encode(array_column($chartData, 'label')) ?>;
     var delivered = <?= json_encode(array_map(fn($r) => (int)$r['delivered'], $chartData)) ?>;
     var failed = <?= json_encode(array_map(fn($r) => (int)$r['failed'], $chartData)) ?>;
     var expired = <?= json_encode(array_map(fn($r) => (int)$r['expired'], $chartData)) ?>;
-    console.log('Chart data:', {labels: labels, delivered: delivered, failed: failed, expired: expired, rows: <?= count($chartData) ?>});
 
     new Chart(document.getElementById('mainChart'), {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [
-                { label: 'Delivered', data: delivered, backgroundColor: '#25D366', borderRadius: 6, barPercentage: 0.7 },
-                { label: 'Failed', data: failed, backgroundColor: '#F44336', borderRadius: 6, barPercentage: 0.7 },
-                { label: 'Expired', data: expired, backgroundColor: '#9C27B0', borderRadius: 6, barPercentage: 0.7 }
+                { label: 'Delivered', data: delivered, backgroundColor: 'rgba(37,211,102,0.85)', hoverBackgroundColor: '#25D366', borderRadius: 8, barPercentage: 0.6, categoryPercentage: 0.8 },
+                { label: 'Failed', data: failed, backgroundColor: 'rgba(244,67,54,0.85)', hoverBackgroundColor: '#F44336', borderRadius: 8, barPercentage: 0.6, categoryPercentage: 0.8 },
+                { label: 'Expired', data: expired, backgroundColor: 'rgba(156,39,176,0.85)', hoverBackgroundColor: '#9C27B0', borderRadius: 8, barPercentage: 0.6, categoryPercentage: 0.8 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 15, font: { size: 11 } } },
-                tooltip: { backgroundColor: '#333', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 12, weight: '500' } } },
+                tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleFont: { size: 13, weight: 'bold' }, bodyFont: { size: 12 }, padding: 12, cornerRadius: 10, displayColors: true, boxPadding: 4 }
             },
             scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }, ticks: { font: { size: 10 } } },
-                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 10 } } }
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, ticks: { font: { size: 11 }, padding: 8 } },
+                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14, font: { size: 11 }, padding: 4 } }
             }
         }
     });
 
-    var dData = [<?= $statusCounts['delivered'] ?>, <?= $statusCounts['failed'] ?>, <?= $statusCounts['expired'] ?>, <?= $statusCounts['pending'] + ($statusCounts['sent'] ?? 0) ?>];
+    var dData = [<?= $pDelivered ?>, <?= $pFailed ?>, <?= $pExpired ?>, <?= $pPending ?>];
     var hasData = dData.some(function(v) { return v > 0; });
 
     new Chart(document.getElementById('statusChart'), {
