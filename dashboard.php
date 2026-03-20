@@ -721,7 +721,13 @@ $usersList = $stmt->fetchAll();
     </div>
 </div>
 
-<!-- Debug: <?= count($chartData) ?> chart rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?>, phpTZ=<?= date_default_timezone_get() ?>, now=<?= date('Y-m-d H:i:s') ?> -->
+<!-- Debug: <?= count($chartData) ?> chart rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?>, phpTZ=<?= date_default_timezone_get() ?>, now=<?= date('Y-m-d H:i:s') ?>, userId=<?= $userId ?>, sql=<?= htmlspecialchars(substr($chartSql, 0, 120)) ?>, params=<?= json_encode($chartParams2) ?> -->
+<?php
+// Quick test query
+$testStmt = $db->query("SELECT COUNT(*) as cnt, MIN(created_at) as first_msg, MAX(created_at) as last_msg FROM messages");
+$testRow = $testStmt->fetch();
+?>
+<!-- TestData: total=<?= $testRow['cnt'] ?>, first=<?= $testRow['first_msg'] ?>, last=<?= $testRow['last_msg'] ?> -->
 <script>
 (function() {
     var labels = <?= json_encode(array_column($chartData, 'label')) ?>;
