@@ -152,7 +152,7 @@ renderHeader('Messages', 'messages');
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($messages as $msg): ?>
+                    <?php foreach ($messages as $msg): try { ?>
                     <tr>
                         <td><strong>#<?= $msg['id'] ?></strong></td>
                         <td class="text-nowrap"><i class="bi bi-telephone"></i> <?= htmlspecialchars($msg['phone']) ?></td>
@@ -188,7 +188,7 @@ renderHeader('Messages', 'messages');
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php } catch (Exception $e) { echo '<tr><td colspan="10" class="text-danger small">Error: ' . htmlspecialchars($e->getMessage()) . '</td></tr>'; } endforeach; ?>
                 </tbody>
             </table>
         </div>

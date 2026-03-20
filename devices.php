@@ -176,10 +176,10 @@ renderHeader('Devices', 'devices');
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($devices as $dev):
+                    <?php foreach ($devices as $dev): try {
                         $lastStatus = $dev['last_msg_status'] ?? '';
                         $isActive = $dev['is_active'] && $dev['last_seen'];
-                        $shortId = substr($dev['device_id'], 0, 8);
+                        $shortId = substr($dev['device_id'] ?? '', 0, 8);
                     ?>
                     <tr>
                         <td>
@@ -259,7 +259,7 @@ renderHeader('Devices', 'devices');
                             </div>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php } catch (Exception $e) { echo '<tr><td colspan="9" class="text-danger small">Error rendering device: ' . htmlspecialchars($e->getMessage()) . '</td></tr>'; } endforeach; ?>
                 </tbody>
             </table>
         </div>
