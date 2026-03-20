@@ -92,6 +92,36 @@ function renderHeader($title, $activePage = '') {
         .msg-preview { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .empty-state { text-align: center; padding: 60px 20px; color: #999; }
         .empty-state i { font-size: 48px; margin-bottom: 15px; display: block; }
+
+        /* Dark mode */
+        body.dark-mode { background: #1a1a2e; color: #e0e0e0; }
+        body.dark-mode .main-content { background: #1a1a2e; }
+        body.dark-mode .topbar { background: #16213e; border-bottom-color: #2a2a4a; }
+        body.dark-mode .topbar h4 { color: #e0e0e0; }
+        body.dark-mode .content-body { background: #1a1a2e; }
+        body.dark-mode .card { background: #16213e; border-color: #2a2a4a; box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+        body.dark-mode .card-header { background: #1a1a3e; border-bottom-color: #2a2a4a; color: #e0e0e0; }
+        body.dark-mode .table { color: #ccc; --bs-table-bg: transparent; --bs-table-striped-bg: rgba(255,255,255,0.03); --bs-table-hover-bg: rgba(255,255,255,0.05); }
+        body.dark-mode .table th { color: #888; border-bottom-color: #2a2a4a; }
+        body.dark-mode .table td { border-bottom-color: #2a2a4a; }
+        body.dark-mode .stat-card { background: #16213e; }
+        body.dark-mode .stat-card .stat-label { color: #888; }
+        body.dark-mode .text-muted { color: #888 !important; }
+        body.dark-mode .form-control, body.dark-mode .form-select { background: #0f3460; border-color: #2a2a4a; color: #e0e0e0; }
+        body.dark-mode .sidebar { background: #0f3460; }
+        body.dark-mode .btn-outline-secondary { color: #aaa; border-color: #444; }
+        body.dark-mode .alert { background: #16213e; border-color: #2a2a4a; }
+    </style>
+    <script>
+    // Dark mode persistence
+    (function() {
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark-mode-preload');
+        }
+    })();
+    </script>
+    <style>
+        html.dark-mode-preload body { background: #1a1a2e; }
     </style>
 </head>
 <body>
@@ -151,6 +181,9 @@ function renderHeader($title, $activePage = '') {
             </div>
             <div class="d-flex align-items-center gap-3">
                 <span class="text-muted small"><?= date('M d, Y H:i') ?></span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode" id="darkModeBtn">
+                    <i class="bi bi-moon-fill" id="darkModeIcon"></i>
+                </button>
                 <a href="logout.php" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
@@ -171,6 +204,22 @@ function renderFooter() {
     </div><!-- /main-content -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function toggleDarkMode() {
+        var isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', isDark);
+        var icon = document.getElementById('darkModeIcon');
+        icon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    }
+    // Apply on load
+    (function() {
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            var icon = document.getElementById('darkModeIcon');
+            if (icon) icon.className = 'bi bi-sun-fill';
+        }
+    })();
+    </script>
 </body>
 </html>
     <?php

@@ -757,68 +757,53 @@ $usersList = $stmt->fetchAll();
 
     var ctx = document.getElementById('mainChart').getContext('2d');
 
-    // Gradient fills
+    // Gradient fills for bars
     var greenGrad = ctx.createLinearGradient(0, 0, 0, 280);
-    greenGrad.addColorStop(0, 'rgba(37,211,102,0.4)');
-    greenGrad.addColorStop(1, 'rgba(37,211,102,0.02)');
+    greenGrad.addColorStop(0, '#25D366');
+    greenGrad.addColorStop(1, '#128C7E');
 
     var redGrad = ctx.createLinearGradient(0, 0, 0, 280);
-    redGrad.addColorStop(0, 'rgba(244,67,54,0.35)');
-    redGrad.addColorStop(1, 'rgba(244,67,54,0.02)');
+    redGrad.addColorStop(0, '#F44336');
+    redGrad.addColorStop(1, '#C62828');
 
     var purpleGrad = ctx.createLinearGradient(0, 0, 0, 280);
-    purpleGrad.addColorStop(0, 'rgba(156,39,176,0.3)');
-    purpleGrad.addColorStop(1, 'rgba(156,39,176,0.02)');
+    purpleGrad.addColorStop(0, '#AB47BC');
+    purpleGrad.addColorStop(1, '#7B1FA2');
 
     new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [
                 {
                     label: 'Delivered',
                     data: delivered,
-                    borderColor: '#25D366',
                     backgroundColor: greenGrad,
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 2.5,
-                    pointRadius: delivered.length > 15 ? 0 : 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#25D366',
-                    pointBorderWidth: 2,
-                    order: 3
+                    hoverBackgroundColor: '#25D366',
+                    borderRadius: { topLeft: 6, topRight: 6 },
+                    borderSkipped: false,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.75
                 },
                 {
                     label: 'Failed',
                     data: failed,
-                    borderColor: '#F44336',
                     backgroundColor: redGrad,
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointRadius: failed.length > 15 ? 0 : 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#F44336',
-                    pointBorderWidth: 2,
-                    order: 2
+                    hoverBackgroundColor: '#F44336',
+                    borderRadius: { topLeft: 6, topRight: 6 },
+                    borderSkipped: false,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.75
                 },
                 {
                     label: 'Expired',
                     data: expired,
-                    borderColor: '#9C27B0',
                     backgroundColor: purpleGrad,
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#9C27B0',
-                    pointBorderWidth: 2,
-                    order: 1
+                    hoverBackgroundColor: '#9C27B0',
+                    borderRadius: { topLeft: 6, topRight: 6 },
+                    borderSkipped: false,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.75
                 }
             ]
         },
@@ -830,35 +815,36 @@ $usersList = $stmt->fetchAll();
                 legend: {
                     position: 'top',
                     align: 'end',
-                    labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 11, weight: '500' }, boxWidth: 8 }
+                    labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16, font: { size: 12, weight: '500' }, boxWidth: 12, boxHeight: 12 }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(255,255,255,0.95)',
                     titleColor: '#333',
-                    bodyColor: '#666',
+                    bodyColor: '#555',
                     borderColor: '#e0e0e0',
                     borderWidth: 1,
                     titleFont: { size: 13, weight: 'bold' },
                     bodyFont: { size: 12 },
                     padding: 14,
-                    cornerRadius: 12,
+                    cornerRadius: 10,
                     displayColors: true,
                     boxPadding: 6,
                     callbacks: {
-                        title: function(items) { return items[0].label; },
-                        label: function(item) { return ' ' + item.dataset.label + ': ' + item.formattedValue + ' messages'; }
+                        label: function(item) { return ' ' + item.dataset.label + ': ' + item.formattedValue; }
                     }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
-                    ticks: { font: { size: 11 }, padding: 10, callback: function(v) { return Number.isInteger(v) ? v : ''; } }
+                    grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false },
+                    ticks: { font: { size: 11, weight: '500' }, padding: 10, callback: function(v) { return Number.isInteger(v) ? v : ''; } },
+                    border: { display: false }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14, font: { size: 11 }, padding: 6 }
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14, font: { size: 11 }, padding: 6 },
+                    border: { display: false }
                 }
             }
         }
