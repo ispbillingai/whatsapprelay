@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = trim($_POST['message'] ?? '');
         $whatsappType = $_POST['whatsapp_type'] ?? 'whatsapp';
         $priority = intval($_POST['priority'] ?? 0);
+        $targetDevice = $_POST['device_id'] ?? '';
 
         if (empty($phoneRaw)) {
             $error = 'Phone number is required';
@@ -29,13 +30,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $phones = [$phone];
             }
 
-            $stmt = $db->prepare('INSERT INTO messages (user_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?)');
+            try {
+                $stmt = $db->prepare('INSERT INTO messages (user_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?)');
+            } catch (Exception $e) {
+                $stmt = $db->prepare('INSERT INTO messages (user_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?)');
+                $targetDevice = null; // fallback if device_id column missing
+            }
             $count = 0;
+            $deviceParam = !empty($targetDevice) ? $targetDevice : null;
 
             foreach ($phones as $p) {
                 $p = preg_replace('/[^0-9]/', '', $p);
                 if (!empty($p) && !empty($message)) {
-                    $stmt->execute([$userId, $p, $message, $whatsappType, $priority]);
+                    if ($deviceParam !== null || $targetDevice === null) {
+                        try {
+                            $stmt->execute([$userId, $deviceParam, $p, $message, $whatsappType, $priority]);
+                        } catch (Exception $e) {
+                            $db->prepare('INSERT INTO messages (user_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?)')
+                               ->execute([$userId, $p, $message, $whatsappType, $priority]);
+                        }
+                    }
                     $count++;
                 }
             }
@@ -46,6 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Get user's active devices for dropdown
+$devStmt = $db->prepare('SELECT device_id, device_name FROM devices WHERE user_id = ? AND is_active = 1 ORDER BY device_name');
+$devStmt->execute([$userId]);
+$userDevices = $devStmt->fetchAll();
 
 renderHeader('Send Message', 'send');
 ?>
@@ -81,14 +100,24 @@ renderHeader('Send Message', 'send');
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">WhatsApp App</label>
                             <select name="whatsapp_type" class="form-select">
                                 <option value="whatsapp">WhatsApp (Personal)</option>
                                 <option value="whatsapp_business">WhatsApp Business</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Device</label>
+                            <select name="device_id" class="form-select">
+                                <option value="">Auto (Round Robin)</option>
+                                <?php foreach ($userDevices as $dev): ?>
+                                <option value="<?= htmlspecialchars($dev['device_id']) ?>"><?= htmlspecialchars($dev['device_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Leave as Auto to distribute across devices</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Priority</label>
                             <select name="priority" class="form-select">
                                 <option value="0">Normal</option>

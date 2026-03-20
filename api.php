@@ -411,8 +411,9 @@ if ($path === '/pending' && $method === 'GET') {
         $devCheck = $db->prepare('SELECT id FROM devices WHERE device_id = ? AND user_id = ?');
         $devCheck->execute([$deviceId, $authUserId]);
         if ($devCheck->fetch()) {
-            $db->prepare('UPDATE devices SET last_seen = NOW(), device_name = ?, svc_accessibility = ?, svc_notification = ?, svc_battery = ? WHERE device_id = ? AND user_id = ?')
-               ->execute([$deviceName, $svcAccessibility, $svcNotification, $svcBattery, $deviceId, $authUserId]);
+            // Don't overwrite device_name — user may have renamed it manually
+            $db->prepare('UPDATE devices SET last_seen = NOW(), svc_accessibility = ?, svc_notification = ?, svc_battery = ? WHERE device_id = ? AND user_id = ?')
+               ->execute([$svcAccessibility, $svcNotification, $svcBattery, $deviceId, $authUserId]);
         } else {
             $db->prepare('INSERT INTO devices (user_id, device_id, device_name, svc_accessibility, svc_notification, svc_battery, last_seen) VALUES (?, ?, ?, ?, ?, ?, NOW())')
                ->execute([$authUserId, $deviceId, $deviceName, $svcAccessibility, $svcNotification, $svcBattery]);

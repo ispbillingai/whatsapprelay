@@ -191,7 +191,8 @@ renderHeader('Devices', 'devices');
                             <?php if (!$dev['is_active']): ?>
                                 <span class="badge bg-secondary">Disabled</span>
                             <?php elseif ($lastStatus === 'failed'): ?>
-                                <span class="badge bg-danger">Offline</span>
+                                <span class="badge bg-danger">Failed</span>
+                                <small class="d-block text-danger" style="font-size:9px;">Last msg failed</small>
                             <?php elseif ($isActive): ?>
                                 <span class="badge bg-success">Online</span>
                             <?php else: ?>
@@ -280,7 +281,7 @@ renderHeader('Devices', 'devices');
                 <p class="fw-bold mb-2">Device Status</p>
                 <table class="table table-sm mb-0">
                     <tr><td><span class="badge bg-success">Online</span></td><td>Device is active — last message was delivered successfully, or no messages have been sent yet</td></tr>
-                    <tr><td><span class="badge bg-danger">Offline</span></td><td>Device has a problem — the last message this device tried to send failed</td></tr>
+                    <tr><td><span class="badge bg-danger">Failed</span></td><td>The last message this device tried to send failed — check the phone's WhatsApp and permissions. Message was auto-retried on another device if available.</td></tr>
                     <tr><td><span class="badge bg-secondary">Disabled</span></td><td>Device has been manually disabled by admin — it will not receive any messages</td></tr>
                     <tr><td><span class="badge bg-warning text-dark">New</span></td><td>Device just registered and hasn't started polling yet — start the relay service on the phone</td></tr>
                 </table>
