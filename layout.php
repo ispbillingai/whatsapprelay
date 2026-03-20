@@ -13,6 +13,7 @@ function renderHeader($title, $activePage = '') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title) ?> - <?= APP_NAME ?></title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -96,7 +97,8 @@ function renderHeader($title, $activePage = '') {
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="brand">
-            <i class="bi bi-whatsapp"></i> <?= APP_NAME ?>
+            <img src="logo.png" alt="FreeISP" style="height:32px; margin-right:8px; vertical-align:middle;">
+            <?= APP_NAME ?>
         </div>
         <div class="mt-3">
             <a href="dashboard.php" class="nav-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">

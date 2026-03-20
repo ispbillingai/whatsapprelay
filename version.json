@@ -1,6 +1,6 @@
 {
-    "versionCode": 20,
-    "versionName": "2.2.0",
+    "versionCode": 21,
+    "versionName": "2.2.1",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.2.0 Multi-Device Support:\n- Each phone gets a unique device ID\n- Devices auto-register on first poll\n- Messages distributed across active devices\n- Offline device messages reassigned automatically\n- Device name shown as manufacturer + model"
+    "changelog": "v2.2.1: FreeISP logo added as app icon, dashboard logo, sidebar brand, login page, and favicon"
 }
