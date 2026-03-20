@@ -44,7 +44,7 @@ if (!function_exists('fmtTime')) {
         if (empty($dbDatetime)) return '-';
         try {
             // DB stores in server timezone (UTC+2), convert to display timezone
-            $dt = new DateTime($dbDatetime, new DateTimeZone('+00:00'));
+            $dt = new DateTime($dbDatetime, new DateTimeZone('+01:00'));
             $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
             return $dt->format($format);
         } catch (Exception $e) {
