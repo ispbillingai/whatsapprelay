@@ -976,6 +976,7 @@ $usersList = $stmt->fetchAll();
 <div id="tourTooltip" class="tour-tooltip d-none"></div>
 
 <script>
+var isMobile = window.innerWidth < 768;
 var tourSteps = [
     {
         target: '#fullApiUrl',
@@ -994,26 +995,28 @@ var tourSteps = [
         desc: 'This API key goes into the <strong>FreeISP WA app</strong> on your phone. It links the phone to your account.<br><br><span class="text-danger"><i class="bi bi-exclamation-triangle"></i> This is NOT for your billing system. The billing system uses the full URL above.</span>',
     },
     {
-        target: 'input[name="wa_type_dash"]',
-        targetParent: true,
-        arrow: 'bi-arrow-up-circle-fill',
+        target: isMobile ? null : '.sidebar a[href="devices.php"]',
+        arrow: 'bi-phone-fill',
         step: 3,
-        title: 'WhatsApp Type',
-        desc: 'Select which WhatsApp you have installed on your relay phone — <strong>WhatsApp</strong> or <strong>WhatsApp Business</strong>. Messages will be sent through whichever one you choose.',
+        title: 'Manage Devices',
+        desc: 'Go to <strong>Devices</strong> in the menu to configure which WhatsApp each phone uses (Personal, Business, or Both).<br><br>You can also see device status, service permissions, and enable load balancing from there.',
+        openSidebar: true,
     },
     {
-        target: '.sidebar a[href="installation.php"]',
-        arrow: 'bi-arrow-left-circle-fill',
+        target: isMobile ? null : '.sidebar a[href="installation.php"]',
+        arrow: 'bi-download',
         step: 4,
         title: 'Installation Guide',
-        desc: 'Click here to download the <strong>FreeISP WA</strong> Android app and follow the step-by-step installation instructions.<br><br><span class="text-warning"><i class="bi bi-exclamation-triangle"></i> After installing, go to <strong>Settings > Apps > FreeISP WA > three dots > Allow restricted settings</strong></span>',
+        desc: 'Go to <strong>Installation Guide</strong> in the menu to download the FreeISP WA Android app and follow step-by-step setup instructions.<br><br><span class="text-warning"><i class="bi bi-exclamation-triangle"></i> After installing: <strong>Settings > Apps > FreeISP WA > three dots > Allow restricted settings</strong></span>',
+        openSidebar: true,
     },
     {
-        target: '.sidebar a[href="messages.php"]',
-        arrow: 'bi-arrow-left-circle-fill',
+        target: isMobile ? null : '.sidebar a[href="messages.php"]',
+        arrow: 'bi-chat-dots-fill',
         step: 5,
         title: 'Message History',
-        desc: 'View all your sent messages here. You can filter by status, retry failed messages, and track delivery.',
+        desc: 'Go to <strong>Messages</strong> in the menu to view all sent messages. You can filter by status, search by phone number, retry failed messages, and track delivery.',
+        openSidebar: true,
     },
 ];
 
@@ -1032,56 +1035,76 @@ function skipTour() {
 }
 
 function showTourStep(index) {
-    // Remove old highlights
     document.querySelectorAll('.tour-highlight').forEach(function(el) { el.classList.remove('tour-highlight'); });
 
     if (index >= tourSteps.length) { endTour(); return; }
     currentTourStep = index;
     var step = tourSteps[index];
+    var tooltip = document.getElementById('tourTooltip');
+    var isLast = index === tourSteps.length - 1;
 
-    // Find and highlight target
-    var el = document.querySelector(step.target);
-    if (!el) { showTourStep(index + 1); return; }
-
-    var highlightEl = step.targetParent ? el.closest('.bg-dark, .rounded-3, div') : el;
-    highlightEl.classList.add('tour-highlight');
-
-    // Scroll into view
-    highlightEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Position tooltip
-    setTimeout(function() {
-        var rect = highlightEl.getBoundingClientRect();
-        var tooltip = document.getElementById('tourTooltip');
-        var isLast = index === tourSteps.length - 1;
-
-        tooltip.innerHTML = '<div class="d-flex align-items-start gap-3">' +
-            '<span class="step-badge">' + step.step + '</span>' +
-            '<div class="flex-grow-1">' +
-                '<div class="d-flex align-items-center gap-2 mb-2">' +
-                    '<i class="bi ' + step.arrow + ' tour-arrow"></i>' +
-                    '<span class="tour-title">' + step.title + '</span>' +
-                '</div>' +
-                '<div class="tour-desc mb-3">' + step.desc + '</div>' +
-                '<div class="d-flex justify-content-between align-items-center">' +
-                    '<span class="text-muted small">Step ' + step.step + ' of ' + tourSteps.length + '</span>' +
-                    '<div class="d-flex gap-2">' +
-                        (index > 0 ? '<button class="btn btn-outline-secondary btn-sm" onclick="showTourStep(' + (index-1) + ')"><i class="bi bi-arrow-left"></i> Back</button>' : '') +
-                        (isLast
-                            ? '<button class="btn btn-success btn-sm px-3" onclick="endTour()"><i class="bi bi-check-circle"></i> Done!</button>'
-                            : '<button class="btn btn-success btn-sm px-3" onclick="showTourStep(' + (index+1) + ')">Next <i class="bi bi-arrow-right"></i></button>') +
-                    '</div>' +
+    // Build tooltip content
+    var tooltipHtml = '<div class="d-flex align-items-start gap-3">' +
+        '<span class="step-badge">' + step.step + '</span>' +
+        '<div class="flex-grow-1">' +
+            '<div class="d-flex align-items-center gap-2 mb-2">' +
+                '<i class="bi ' + step.arrow + ' tour-arrow"></i>' +
+                '<span class="tour-title">' + step.title + '</span>' +
+            '</div>' +
+            '<div class="tour-desc mb-3">' + step.desc + '</div>' +
+            '<div class="d-flex justify-content-between align-items-center">' +
+                '<span class="text-muted small">Step ' + step.step + ' of ' + tourSteps.length + '</span>' +
+                '<div class="d-flex gap-2">' +
+                    (index > 0 ? '<button class="btn btn-outline-secondary btn-sm" onclick="showTourStep(' + (index-1) + ')"><i class="bi bi-arrow-left"></i> Back</button>' : '') +
+                    (isLast
+                        ? '<button class="btn btn-success btn-sm px-3" onclick="endTour()"><i class="bi bi-check-circle"></i> Done!</button>'
+                        : '<button class="btn btn-success btn-sm px-3" onclick="showTourStep(' + (index+1) + ')">Next <i class="bi bi-arrow-right"></i></button>') +
                 '</div>' +
             '</div>' +
-        '</div>';
+        '</div>' +
+    '</div>';
 
-        // Position below or to the right of the element
+    // If no target (mobile sidebar items) or target not found — show centered card
+    var el = step.target ? document.querySelector(step.target) : null;
+
+    if (step.openSidebar && isMobile && el) {
+        // Open sidebar on mobile to show the target
+        document.getElementById('sidebar').classList.add('show');
+        setTimeout(function() { finishShowStep(el, step, tooltip, tooltipHtml, isLast); }, 400);
+    } else if (!el) {
+        // No target — show tooltip centered on screen
+        tooltip.innerHTML = tooltipHtml;
+        tooltip.style.top = '50%';
+        tooltip.style.left = '50%';
+        tooltip.style.transform = 'translate(-50%, -50%)';
+        tooltip.style.maxWidth = Math.min(400, window.innerWidth - 40) + 'px';
+        tooltip.classList.remove('d-none');
+    } else {
+        finishShowStep(el, step, tooltip, tooltipHtml, isLast);
+    }
+}
+
+function finishShowStep(el, step, tooltip, tooltipHtml, isLast) {
+    var highlightEl = step.targetParent ? el.closest('.bg-dark, .rounded-3, div') : el;
+    highlightEl.classList.add('tour-highlight');
+    highlightEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(function() {
+        var rect = highlightEl.getBoundingClientRect();
+        tooltip.innerHTML = tooltipHtml;
+        tooltip.style.transform = 'none';
+        tooltip.style.maxWidth = Math.min(420, window.innerWidth - 32) + 'px';
+
         var top = rect.bottom + 16;
         var left = Math.max(16, Math.min(rect.left, window.innerWidth - 440));
 
-        // If below viewport, place above
         if (top + 200 > window.innerHeight) {
             top = Math.max(16, rect.top - 220);
+        }
+
+        // Mobile: always center horizontally
+        if (window.innerWidth < 768) {
+            left = Math.max(8, (window.innerWidth - 380) / 2);
         }
 
         tooltip.style.top = top + 'px';
@@ -1094,6 +1117,8 @@ function endTour() {
     document.querySelectorAll('.tour-highlight').forEach(function(el) { el.classList.remove('tour-highlight'); });
     document.getElementById('tourOverlay').classList.add('d-none');
     document.getElementById('tourTooltip').classList.add('d-none');
+    // Close sidebar on mobile
+    document.getElementById('sidebar').classList.remove('show');
 }
 
 function startTourManual() {
