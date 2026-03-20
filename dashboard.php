@@ -8,7 +8,7 @@ $userId = $_SESSION['user_id'];
 $isAdminUser = isAdmin();
 
 // Save WhatsApp type preference (AJAX)
-if (isset($_GET['set_wa_type']) && in_array($_GET['set_wa_type'], ['whatsapp', 'whatsapp_business'])) {
+if (isset($_GET['set_wa_type']) && in_array($_GET['set_wa_type'], ['whatsapp', 'whatsapp_business', 'load_balance'])) {
     $db->prepare('UPDATE users SET whatsapp_type = ? WHERE id = ?')->execute([$_GET['set_wa_type'], $userId]);
     exit;
 }
@@ -217,16 +217,23 @@ renderHeader('Dashboard', 'dashboard');
 
         <!-- WhatsApp type selector -->
         <div class="bg-dark bg-opacity-25 rounded-3 p-3 mb-3">
-            <div class="d-flex align-items-center gap-3">
-                <span class="small opacity-75">Default WhatsApp:</span>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="small opacity-75">Send via:</span>
                 <div class="form-check form-check-inline mb-0">
                     <input class="form-check-input" type="radio" name="wa_type_dash" id="waPersonal" value="whatsapp" <?= ($userWaType ?? 'whatsapp') === 'whatsapp' ? 'checked' : '' ?> onchange="saveWaType(this.value)">
-                    <label class="form-check-label small text-white" for="waPersonal"><i class="bi bi-whatsapp"></i> WhatsApp</label>
+                    <label class="form-check-label small text-white" for="waPersonal"><i class="bi bi-whatsapp"></i> WhatsApp Only</label>
                 </div>
                 <div class="form-check form-check-inline mb-0">
                     <input class="form-check-input" type="radio" name="wa_type_dash" id="waBusiness" value="whatsapp_business" <?= ($userWaType ?? 'whatsapp') === 'whatsapp_business' ? 'checked' : '' ?> onchange="saveWaType(this.value)">
-                    <label class="form-check-label small text-white" for="waBusiness"><i class="bi bi-briefcase"></i> WhatsApp Business</label>
+                    <label class="form-check-label small text-white" for="waBusiness"><i class="bi bi-briefcase"></i> Business Only</label>
                 </div>
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="wa_type_dash" id="waBalanced" value="load_balance" <?= ($userWaType ?? 'whatsapp') === 'load_balance' ? 'checked' : '' ?> onchange="saveWaType(this.value)">
+                    <label class="form-check-label small text-white" for="waBalanced"><i class="bi bi-shuffle"></i> Load Balance (Both)</label>
+                </div>
+            </div>
+            <div id="loadBalanceInfo" class="mt-2 small opacity-75" style="display: <?= ($userWaType ?? 'whatsapp') === 'load_balance' ? 'block' : 'none' ?>;">
+                <i class="bi bi-info-circle"></i> Messages will alternate between WhatsApp and WhatsApp Business to spread volume and reduce ban risk. Both apps must be installed on your relay phone.
             </div>
         </div>
 
@@ -330,6 +337,7 @@ function copyKey() {
 }
 function saveWaType(type) {
     fetch('dashboard.php?set_wa_type=' + type).then(function() {});
+    document.getElementById('loadBalanceInfo').style.display = type === 'load_balance' ? 'block' : 'none';
 }
 function retryMessages(type) {
     if (!confirm('Are you sure you want to retry ' + (type === 'all' ? 'all failed & expired' : type) + ' messages?')) return;

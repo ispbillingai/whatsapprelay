@@ -173,6 +173,15 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
         $whatsappType = $waStmt->fetchColumn() ?: 'whatsapp';
     }
 
+    // Load balance: alternate between whatsapp and whatsapp_business
+    if ($whatsappType === 'load_balance') {
+        $db = getDB();
+        $lastStmt = $db->prepare('SELECT whatsapp_type FROM messages WHERE user_id = ? ORDER BY id DESC LIMIT 1');
+        $lastStmt->execute([$auth['user_id']]);
+        $lastType = $lastStmt->fetchColumn();
+        $whatsappType = ($lastType === 'whatsapp') ? 'whatsapp_business' : 'whatsapp';
+    }
+
     if (!in_array($whatsappType, ['whatsapp', 'whatsapp_business'])) {
         $whatsappType = 'whatsapp';
     }
@@ -225,6 +234,15 @@ if ($path === '/send' && $method === 'POST') {
     }
 
     $phone = preg_replace('/[^0-9]/', '', $phone);
+
+    // Load balance: alternate between whatsapp and whatsapp_business
+    if ($whatsappType === 'load_balance') {
+        $db = getDB();
+        $lastStmt = $db->prepare('SELECT whatsapp_type FROM messages WHERE user_id = ? ORDER BY id DESC LIMIT 1');
+        $lastStmt->execute([$authUserId]);
+        $lastType = $lastStmt->fetchColumn();
+        $whatsappType = ($lastType === 'whatsapp') ? 'whatsapp_business' : 'whatsapp';
+    }
 
     if (!in_array($whatsappType, ['whatsapp', 'whatsapp_business'])) {
         $whatsappType = 'whatsapp';
