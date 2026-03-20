@@ -125,7 +125,7 @@ renderHeader('Devices', 'devices');
     <div class="col-sm-4">
         <div class="card text-center">
             <div class="card-body py-3">
-                <?php $online = count(array_filter($devices, fn($d) => $d['is_active'] && $d['last_seen'] && strtotime($d['last_seen']) > strtotime('-2 minutes'))); ?>
+                <?php $online = count(array_filter($devices, fn($d) => $d['is_active'] && $d['last_seen'] && strtotime($d['last_seen']) > strtotime('-5 minutes'))); ?>
                 <h3 class="mb-0 text-success"><?= $online ?></h3>
                 <small class="text-muted">Online Now</small>
             </div>
@@ -173,7 +173,7 @@ renderHeader('Devices', 'devices');
                 </thead>
                 <tbody>
                     <?php foreach ($devices as $dev):
-                        $isOnline = $dev['is_active'] && $dev['last_seen'] && strtotime($dev['last_seen']) > strtotime('-2 minutes');
+                        $isOnline = $dev['is_active'] && $dev['last_seen'] && strtotime($dev['last_seen']) > strtotime('-5 minutes');
                         $shortId = substr($dev['device_id'], 0, 8);
                     ?>
                     <tr>
