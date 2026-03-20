@@ -280,19 +280,19 @@ renderHeader('Devices', 'devices');
             <div class="col-md-6">
                 <p class="fw-bold mb-2">Device Status</p>
                 <table class="table table-sm mb-0">
-                    <tr><td><span class="badge bg-success">Online</span></td><td>Device is active — last message was delivered successfully, or no messages have been sent yet</td></tr>
-                    <tr><td><span class="badge bg-danger">Failed</span></td><td>The last message this device tried to send failed — check the phone's WhatsApp and permissions. Message was auto-retried on another device if available.</td></tr>
-                    <tr><td><span class="badge bg-secondary">Disabled</span></td><td>Device has been manually disabled by admin — it will not receive any messages</td></tr>
-                    <tr><td><span class="badge bg-warning text-dark">New</span></td><td>Device just registered and hasn't started polling yet — start the relay service on the phone</td></tr>
+                    <tr><td><span class="badge bg-success">Online</span></td><td>Device is active. Last message was delivered successfully.</td></tr>
+                    <tr><td><span class="badge bg-danger">Failed</span></td><td>Last message failed. Check the phone's WhatsApp and permissions.</td></tr>
+                    <tr><td><span class="badge bg-secondary">Disabled</span></td><td>Manually disabled. Will not receive any messages.</td></tr>
+                    <tr><td><span class="badge bg-warning text-dark">New</span></td><td>Just registered. Start the relay service on the phone.</td></tr>
                 </table>
             </div>
             <div class="col-md-6">
                 <p class="fw-bold mb-2">Service Badges (under device name)</p>
                 <table class="table table-sm mb-0">
-                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-hand-index"></i> ON</span></td><td><strong>Accessibility Service</strong> — required for sending messages to new contacts. If OFF, the app cannot auto-tap the send button in WhatsApp</td></tr>
-                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-bell"></i> ON</span></td><td><strong>Notification Listener</strong> — enables silent background sending via WhatsApp notification replies. If OFF, messages only send when WhatsApp opens on screen</td></tr>
-                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-battery-charging"></i> OK</span></td><td><strong>Battery Optimization</strong> — disabled means Android won't kill the app in background. If OFF, the relay service may stop unexpectedly</td></tr>
-                    <tr><td><span class="badge bg-danger" style="font-size:10px;"><i class="bi bi-hand-index"></i> OFF</span></td><td>Service is not enabled — open the FreeISP WA app on the phone to enable it</td></tr>
+                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-hand-index"></i> ON</span></td><td><strong>Accessibility Service</strong> - required for new contacts. If OFF, can't auto-tap send.</td></tr>
+                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-bell"></i> ON</span></td><td><strong>Notification Listener</strong> - enables silent background sending. If OFF, WhatsApp opens on screen.</td></tr>
+                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-battery-charging"></i> OK</span></td><td><strong>Battery Optimization</strong> - keeps app running in background. If OFF, service may stop.</td></tr>
+                    <tr><td><span class="badge bg-danger" style="font-size:10px;"><i class="bi bi-hand-index"></i> OFF</span></td><td>Service not enabled. Open the app on the phone to enable it.</td></tr>
                 </table>
             </div>
         </div>
