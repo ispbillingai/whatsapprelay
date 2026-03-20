@@ -247,8 +247,20 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
     $assignedDevice = null;
     try { $assignedDevice = assignDevice($auth['user_id'], $whatsappType); } catch (Exception $e) {}
 
+    // Override whatsapp_type to match the assigned device's setting
+    if ($assignedDevice) {
+        try {
+            $devTypeStmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
+            $devTypeStmt->execute([$assignedDevice]);
+            $devType = $devTypeStmt->fetchColumn();
+            if ($devType && $devType !== 'both') {
+                // Device is set to specific type — use that type regardless
+                $whatsappType = ($devType === 'whatsapp_business') ? 'whatsapp_business' : 'whatsapp';
+            }
+        } catch (Exception $e) {}
+    }
+
     try {
-        // Try with device_id column
         $stmt = $db->prepare(
             'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, 0)'
         );
@@ -321,6 +333,18 @@ if ($path === '/send' && $method === 'POST') {
     $db = getDB();
     $assignedDevice = null;
     try { $assignedDevice = assignDevice($authUserId, $whatsappType); } catch (Exception $e) {}
+
+    // Override whatsapp_type to match device setting
+    if ($assignedDevice) {
+        try {
+            $devTypeStmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
+            $devTypeStmt->execute([$assignedDevice]);
+            $devType = $devTypeStmt->fetchColumn();
+            if ($devType && $devType !== 'both') {
+                $whatsappType = ($devType === 'whatsapp_business') ? 'whatsapp_business' : 'whatsapp';
+            }
+        } catch (Exception $e) {}
+    }
 
     try {
         $stmt = $db->prepare(
