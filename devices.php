@@ -57,7 +57,7 @@ if ($isAdminUser) {
             (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
             (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
             (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "failed" AND created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)) as recent_failures
+            (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
          FROM devices d
          LEFT JOIN users u ON d.user_id = u.id
          ORDER BY d.last_seen DESC'
@@ -68,7 +68,7 @@ if ($isAdminUser) {
             (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
             (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
             (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
-            (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "failed" AND created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)) as recent_failures
+            (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
          FROM devices d
          WHERE d.user_id = ?
          ORDER BY d.last_seen DESC'
@@ -129,7 +129,7 @@ renderHeader('Devices', 'devices');
     <div class="col-sm-4">
         <div class="card text-center">
             <div class="card-body py-3">
-                <?php $online = count(array_filter($devices, fn($d) => $d['is_active'] && $d['last_seen'] && ($d['recent_failures'] ?? 0) == 0)); ?>
+                <?php $online = count(array_filter($devices, fn($d) => $d['is_active'] && $d['last_seen'] && ($d['last_msg_status'] ?? '') !== 'failed')); ?>
                 <h3 class="mb-0 text-success"><?= $online ?></h3>
                 <small class="text-muted">Online Now</small>
             </div>
@@ -177,7 +177,7 @@ renderHeader('Devices', 'devices');
                 </thead>
                 <tbody>
                     <?php foreach ($devices as $dev):
-                        $hasRecentFailures = ($dev['recent_failures'] ?? 0) > 0;
+                        $lastStatus = $dev['last_msg_status'] ?? '';
                         $isActive = $dev['is_active'] && $dev['last_seen'];
                         $shortId = substr($dev['device_id'], 0, 8);
                     ?>
@@ -185,12 +185,12 @@ renderHeader('Devices', 'devices');
                         <td>
                             <?php if (!$dev['is_active']): ?>
                                 <span class="badge bg-secondary">Disabled</span>
-                            <?php elseif ($hasRecentFailures): ?>
+                            <?php elseif ($lastStatus === 'failed'): ?>
                                 <span class="badge bg-danger">Offline</span>
                             <?php elseif ($isActive): ?>
                                 <span class="badge bg-success">Online</span>
                             <?php else: ?>
-                                <span class="badge bg-warning text-dark">Unknown</span>
+                                <span class="badge bg-warning text-dark">New</span>
                             <?php endif; ?>
                         </td>
                         <td>
@@ -269,9 +269,10 @@ renderHeader('Devices', 'devices');
 
 <div class="mt-3 small text-muted">
     <i class="bi bi-info-circle"></i> <strong>Status guide:</strong>
-    <span class="badge bg-success">Online</span> = device is active with no recent failures.
-    <span class="badge bg-danger">Offline</span> = device has failed messages in the last 10 minutes.
-    Service badges under device name show which permissions are enabled (<span class="text-success">green</span> = ON, <span class="text-danger">red</span> = OFF). Open the app on the phone to update service statuses.
+    <span class="badge bg-success">Online</span> = last message was delivered successfully or no messages yet.
+    <span class="badge bg-danger">Offline</span> = last message sent by this device failed.
+    <span class="badge bg-warning text-dark">New</span> = device just registered, hasn't polled yet.
+    Service badges show which permissions are enabled on the phone.
 </div>
 
 <?php renderFooter(); ?>
