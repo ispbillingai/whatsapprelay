@@ -99,18 +99,44 @@ function renderHeader($title, $activePage = '') {
         body.dark-mode .topbar { background: #16213e; border-bottom-color: #2a2a4a; }
         body.dark-mode .topbar h4 { color: #e0e0e0; }
         body.dark-mode .content-body { background: #1a1a2e; }
-        body.dark-mode .card { background: #16213e; border-color: #2a2a4a; box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
-        body.dark-mode .card-header { background: #1a1a3e; border-bottom-color: #2a2a4a; color: #e0e0e0; }
-        body.dark-mode .table { color: #ccc; --bs-table-bg: transparent; --bs-table-striped-bg: rgba(255,255,255,0.03); --bs-table-hover-bg: rgba(255,255,255,0.05); }
-        body.dark-mode .table th { color: #888; border-bottom-color: #2a2a4a; }
-        body.dark-mode .table td { border-bottom-color: #2a2a4a; }
+        body.dark-mode .card { background: #16213e !important; border-color: #2a2a4a !important; box-shadow: 0 2px 12px rgba(0,0,0,0.3); color: #e0e0e0; }
+        body.dark-mode .card-header { background: #1a1a3e !important; border-bottom-color: #2a2a4a !important; color: #e0e0e0 !important; }
+        body.dark-mode .card-body { color: #e0e0e0; }
+        body.dark-mode .table { color: #ddd; --bs-table-bg: transparent; --bs-table-striped-bg: rgba(255,255,255,0.03); --bs-table-hover-bg: rgba(255,255,255,0.06); }
+        body.dark-mode .table th { color: #999; border-bottom-color: #2a2a4a; }
+        body.dark-mode .table td { border-bottom-color: #2a2a4a; color: #ddd; }
         body.dark-mode .stat-card { background: #16213e; }
-        body.dark-mode .stat-card .stat-label { color: #888; }
-        body.dark-mode .text-muted { color: #888 !important; }
+        body.dark-mode .stat-card .stat-value { color: #fff; }
+        body.dark-mode .stat-card .stat-label { color: #999; }
+        body.dark-mode .text-muted { color: #999 !important; }
+        body.dark-mode .text-dark { color: #ddd !important; }
+        body.dark-mode p, body.dark-mode li, body.dark-mode span, body.dark-mode label, body.dark-mode small { color: #ccc; }
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 { color: #eee; }
+        body.dark-mode strong { color: #fff; }
         body.dark-mode .form-control, body.dark-mode .form-select { background: #0f3460; border-color: #2a2a4a; color: #e0e0e0; }
+        body.dark-mode .form-label { color: #ccc; }
+        body.dark-mode .input-group-text { background: #0f3460; border-color: #2a2a4a; color: #aaa; }
         body.dark-mode .sidebar { background: #0f3460; }
-        body.dark-mode .btn-outline-secondary { color: #aaa; border-color: #444; }
-        body.dark-mode .alert { background: #16213e; border-color: #2a2a4a; }
+        body.dark-mode .sidebar .nav-link { color: rgba(255,255,255,0.7); }
+        body.dark-mode .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.1); }
+        body.dark-mode .btn-outline-secondary { color: #bbb; border-color: #555; }
+        body.dark-mode .btn-outline-secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        body.dark-mode .alert { background: #1a1a3e; border-color: #2a2a4a; color: #ddd; }
+        body.dark-mode .alert-warning { background: #2d2215; border-color: #4d3d20; color: #ffcc80; }
+        body.dark-mode .alert-info { background: #152030; border-color: #203850; color: #90caf9; }
+        body.dark-mode .border-danger { border-color: #5a2020 !important; }
+        body.dark-mode .bg-light { background: #1a1a3e !important; color: #ddd; }
+        body.dark-mode .bg-white { background: #16213e !important; }
+        body.dark-mode .badge-status { color: #fff; }
+        body.dark-mode .accordion-button { background: #16213e; color: #ddd; }
+        body.dark-mode .accordion-body { background: #1a1a2e; color: #ccc; }
+        body.dark-mode code { color: #7ec8e3; }
+        body.dark-mode pre { background: #0a0a1a !important; }
+        body.dark-mode .modal-content { background: #16213e; color: #e0e0e0; }
+        body.dark-mode .modal-header { border-bottom-color: #2a2a4a; }
+        body.dark-mode .btn-close { filter: invert(1); }
+        body.dark-mode a:not(.btn):not(.nav-link) { color: #64b5f6; }
+        body.dark-mode .page-link { background: #16213e; border-color: #2a2a4a; color: #ddd; }
     </style>
     <script>
     // Dark mode persistence
