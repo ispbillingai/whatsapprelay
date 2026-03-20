@@ -104,22 +104,6 @@ $stmt->execute($params);
 $recentMessages = $stmt->fetchAll();
 
 // Chart data: daily stats for the last 14 days
-$chartWhere = $showAll ? '' : 'WHERE user_id = ?';
-$chartParams = $showAll ? [] : [$userId];
-$chartStmt = $db->prepare(
-    "SELECT DATE(created_at) as day,
-        SUM(status = 'delivered') as delivered,
-        SUM(status = 'failed') as failed,
-        SUM(status = 'expired') as expired,
-        SUM(status = 'sent') as sent,
-        SUM(status = 'pending') as pending,
-        COUNT(*) as total
-     FROM messages $chartWhere
-     AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-     GROUP BY DATE(created_at)
-     ORDER BY day ASC"
-);
-// Fix: need WHERE if no user filter
 if ($showAll) {
     $chartStmt = $db->prepare(
         "SELECT DATE(created_at) as day,
