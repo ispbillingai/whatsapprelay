@@ -35,11 +35,11 @@ function getCurrentUser() {
     return $user;
 }
 
-if (!function_exists('localTime')) {
+if (!function_exists('fmtTime')) {
     /**
      * Convert a UTC datetime from the database to the user's local timezone for display.
      */
-    function localTime($utcDatetime, $format = 'M d H:i') {
+    function fmtTime($utcDatetime, $format = 'M d H:i') {
         if (empty($utcDatetime)) return '-';
         try {
             $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));

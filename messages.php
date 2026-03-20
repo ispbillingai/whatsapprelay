@@ -179,8 +179,8 @@ renderHeader('Messages', 'messages');
                         </td>
                         <td><span class="badge-status badge-<?= $msg['status'] ?>"><?= ucfirst($msg['status']) ?></span></td>
                         <td class="text-center"><?= $msg['retry_count'] ?></td>
-                        <td class="text-muted small text-nowrap"><?= localTime($msg['created_at']) ?></td>
-                        <td class="text-muted small"><?= localTime($msg['sent_at']) ?></td>
+                        <td class="text-muted small text-nowrap"><?= fmtTime($msg['created_at']) ?></td>
+                        <td class="text-muted small"><?= fmtTime($msg['sent_at']) ?></td>
                         <?php if ($isAdminUser): ?>
                         <td class="small"><?= htmlspecialchars($msg['user_name'] ?? 'N/A') ?></td>
                         <?php endif; ?>

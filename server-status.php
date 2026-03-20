@@ -46,7 +46,7 @@ $mysqlUptimeHours = floor(($mysqlUptime % 86400) / 3600);
 $dbSize = $db->query("SELECT SUM(data_length + index_length) / 1024 / 1024 AS size FROM information_schema.tables WHERE table_schema = '" . DB_NAME . "'")->fetch()['size'] ?? 0;
 
 // Table sizes
-$tables = $db->query("SELECT table_name, table_rows, ROUND((data_length + index_length) / 1024, 2) AS size_kb FROM information_schema.tables WHERE table_schema = '" . DB_NAME . "' ORDER BY (data_length + index_length) DESC")->fetchAll();
+$tables = $db->query("SELECT TABLE_NAME as table_name, TABLE_ROWS as table_rows, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024, 2) AS size_kb FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . DB_NAME . "' AND TABLE_TYPE = 'BASE TABLE' ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC")->fetchAll();
 
 // Message stats
 $totalMessages = $db->query("SELECT COUNT(*) as cnt FROM messages")->fetch()['cnt'];
