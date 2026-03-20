@@ -114,35 +114,42 @@ try {
     $userFilter = $showAll ? '' : 'AND user_id = ?';
     $chartParams2 = $showAll ? [] : [$userId];
 
-    // Build chart query - use PHP dates to avoid MySQL timezone issues
-    $todayStart = date('Y-m-d 00:00:00');
-    $weekStart = date('Y-m-d 00:00:00', strtotime('-7 days'));
-    $monthStart = date('Y-m-d 00:00:00', strtotime('-30 days'));
+    // Build chart query - convert local dates to UTC for DB comparison
+    $utcOffset = date('Z'); // seconds offset from UTC
+    $todayStartUTC = gmdate('Y-m-d H:i:s', strtotime('today') );
+    $weekStartUTC = gmdate('Y-m-d H:i:s', strtotime('-7 days midnight'));
+    $monthStartUTC = gmdate('Y-m-d H:i:s', strtotime('-30 days midnight'));
+
+    // Add timezone offset hours to DB times for correct local grouping
+    $offsetHours = intval(date('Z') / 3600); // e.g. 3 for Africa/Nairobi
+    $localExpr = $offsetHours >= 0
+        ? "DATE_ADD(created_at, INTERVAL $offsetHours HOUR)"
+        : "DATE_SUB(created_at, INTERVAL " . abs($offsetHours) . " HOUR)";
 
     if ($chartPeriod === 'today') {
-        $chartSql = "SELECT CONCAT(HOUR(created_at), ':00') as label,
+        $chartSql = "SELECT CONCAT(HOUR($localExpr), ':00') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
          FROM messages WHERE created_at >= ? $userFilter
-         GROUP BY HOUR(created_at) ORDER BY HOUR(created_at) ASC";
-        array_unshift($chartParams2, $todayStart);
+         GROUP BY HOUR($localExpr) ORDER BY HOUR($localExpr) ASC";
+        array_unshift($chartParams2, $todayStartUTC);
     } elseif ($chartPeriod === 'week') {
-        $chartSql = "SELECT DATE_FORMAT(created_at, '%a %d') as label,
+        $chartSql = "SELECT DATE_FORMAT($localExpr, '%a %d') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
          FROM messages WHERE created_at >= ? $userFilter
-         GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC";
-        array_unshift($chartParams2, $weekStart);
+         GROUP BY DATE($localExpr) ORDER BY DATE($localExpr) ASC";
+        array_unshift($chartParams2, $weekStartUTC);
     } else {
-        $chartSql = "SELECT DATE_FORMAT(created_at, '%b %d') as label,
+        $chartSql = "SELECT DATE_FORMAT($localExpr, '%b %d') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
          FROM messages WHERE created_at >= ? $userFilter
-         GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC";
-        array_unshift($chartParams2, $monthStart);
+         GROUP BY DATE($localExpr) ORDER BY DATE($localExpr) ASC";
+        array_unshift($chartParams2, $monthStartUTC);
     }
     $chartStmt = $db->prepare($chartSql);
     $chartStmt->execute($chartParams2);

@@ -18,8 +18,8 @@ function getDB() {
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]
             );
-            // Set MySQL session timezone to Africa/Nairobi (+03:00)
-            $pdo->exec("SET time_zone = '+03:00'");
+            // Don't set MySQL timezone - DATETIME columns don't convert
+            // PHP handles all timezone display via date_default_timezone_set()
         } catch (PDOException $e) {
             die('Database connection failed: ' . $e->getMessage());
         }
