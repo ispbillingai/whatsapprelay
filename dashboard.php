@@ -95,11 +95,63 @@ if ($isAdminUser && $adminView) {
     $activeUsers = $stmt->fetch()['cnt'];
 }
 
-// Recent messages
+// Recent messages with pagination
+$perPage = intval($_GET['per_page'] ?? 50);
+if (!in_array($perPage, [50, 100, 200])) $perPage = 50;
 $where = $showAll ? '' : 'WHERE m.user_id = ?';
-$stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $where ORDER BY m.created_at DESC LIMIT 10");
+$stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $where ORDER BY m.created_at DESC LIMIT $perPage");
 $stmt->execute($params);
 $recentMessages = $stmt->fetchAll();
+
+// Chart data: daily stats for the last 14 days
+$chartWhere = $showAll ? '' : 'WHERE user_id = ?';
+$chartParams = $showAll ? [] : [$userId];
+$chartStmt = $db->prepare(
+    "SELECT DATE(created_at) as day,
+        SUM(status = 'delivered') as delivered,
+        SUM(status = 'failed') as failed,
+        SUM(status = 'expired') as expired,
+        SUM(status = 'sent') as sent,
+        SUM(status = 'pending') as pending,
+        COUNT(*) as total
+     FROM messages $chartWhere
+     AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+     GROUP BY DATE(created_at)
+     ORDER BY day ASC"
+);
+// Fix: need WHERE if no user filter
+if ($showAll) {
+    $chartStmt = $db->prepare(
+        "SELECT DATE(created_at) as day,
+            SUM(status = 'delivered') as delivered,
+            SUM(status = 'failed') as failed,
+            SUM(status = 'expired') as expired,
+            SUM(status = 'sent') as sent,
+            SUM(status = 'pending') as pending,
+            COUNT(*) as total
+         FROM messages
+         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+         GROUP BY DATE(created_at)
+         ORDER BY day ASC"
+    );
+    $chartStmt->execute();
+} else {
+    $chartStmt = $db->prepare(
+        "SELECT DATE(created_at) as day,
+            SUM(status = 'delivered') as delivered,
+            SUM(status = 'failed') as failed,
+            SUM(status = 'expired') as expired,
+            SUM(status = 'sent') as sent,
+            SUM(status = 'pending') as pending,
+            COUNT(*) as total
+         FROM messages
+         WHERE user_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+         GROUP BY DATE(created_at)
+         ORDER BY day ASC"
+    );
+    $chartStmt->execute([$userId]);
+}
+$chartData = $chartStmt->fetchAll();
 
 // Active API keys count
 $where = $showAll ? "WHERE is_active = 1" : "WHERE is_active = 1 AND user_id = ?";
@@ -616,11 +668,84 @@ $usersList = $stmt->fetchAll();
 </div>
 <?php endif; ?>
 
+<!-- Message Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header py-3"><i class="bi bi-bar-chart"></i> Messages (Last 14 Days)</div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header py-3"><i class="bi bi-pie-chart"></i> Status Breakdown</div>
+            <div class="card-body">
+                <canvas id="statusChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var chartLabels = <?= json_encode(array_map(fn($r) => date('M d', strtotime($r['day'])), $chartData)) ?>;
+var chartDelivered = <?= json_encode(array_map(fn($r) => (int)$r['delivered'], $chartData)) ?>;
+var chartFailed = <?= json_encode(array_map(fn($r) => (int)$r['failed'], $chartData)) ?>;
+var chartExpired = <?= json_encode(array_map(fn($r) => (int)$r['expired'], $chartData)) ?>;
+
+// Daily bar chart
+if (document.getElementById('dailyChart')) {
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                { label: 'Delivered', data: chartDelivered, backgroundColor: '#25D366', borderRadius: 4 },
+                { label: 'Failed', data: chartFailed, backgroundColor: '#F44336', borderRadius: 4 },
+                { label: 'Expired', data: chartExpired, backgroundColor: '#9C27B0', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } } },
+            scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
+
+// Status pie chart
+if (document.getElementById('statusChart')) {
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Delivered', 'Failed', 'Expired', 'Pending', 'Sent'],
+            datasets: [{
+                data: [<?= $statusCounts['delivered'] ?>, <?= $statusCounts['failed'] ?>, <?= $statusCounts['expired'] ?>, <?= $statusCounts['pending'] ?>, <?= $statusCounts['sent'] ?? 0 ?>],
+                backgroundColor: ['#25D366', '#F44336', '#9C27B0', '#FF9800', '#2196F3'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10 } } }
+        }
+    });
+}
+</script>
+
 <!-- Recent Messages -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center py-3">
         <span><i class="bi bi-clock-history"></i> Recent Messages</span>
-        <a href="messages.php" class="btn btn-sm btn-outline-secondary">View All</a>
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" style="width:auto;" onchange="window.location='?per_page='+this.value">
+                <option value="50" <?= $perPage == 50 ? 'selected' : '' ?>>50</option>
+                <option value="100" <?= $perPage == 100 ? 'selected' : '' ?>>100</option>
+                <option value="200" <?= $perPage == 200 ? 'selected' : '' ?>>200</option>
+            </select>
+            <a href="messages.php" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
     </div>
     <div class="card-body p-0">
         <?php if (empty($recentMessages)): ?>

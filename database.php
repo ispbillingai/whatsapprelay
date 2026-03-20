@@ -18,6 +18,9 @@ function getDB() {
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]
             );
+            // Set MySQL session timezone to match PHP timezone
+            $tz = date('P'); // e.g. "+03:00"
+            $pdo->exec("SET time_zone = '$tz'");
         } catch (PDOException $e) {
             die('Database connection failed: ' . $e->getMessage());
         }
