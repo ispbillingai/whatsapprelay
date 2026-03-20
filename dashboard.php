@@ -659,10 +659,14 @@ $usersList = $stmt->fetchAll();
     <div class="card-body">
         <div class="row">
             <div class="col-lg-8">
-                <canvas id="mainChart" height="220"></canvas>
+                <div style="position:relative; height:250px;">
+                    <canvas id="mainChart"></canvas>
+                </div>
             </div>
             <div class="col-lg-4">
-                <canvas id="statusChart" height="220"></canvas>
+                <div style="position:relative; height:200px;">
+                    <canvas id="statusChart"></canvas>
+                </div>
                 <div class="text-center mt-3">
                     <div class="row g-2">
                         <div class="col-6">
