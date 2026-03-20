@@ -526,12 +526,37 @@ if ($path === '/status' && $method === 'POST') {
         $stmt->execute([$messageId]);
         logAction($messageId, 'delivered', 'Message sent via WhatsApp');
     } else {
-        // Failed = final. No auto-retry to prevent duplicate sends.
-        $stmt = $db->prepare(
-            'UPDATE messages SET status = "failed", error_message = ? WHERE id = ?'
-        );
-        $stmt->execute([$errorMessage, $messageId]);
-        logAction($messageId, 'failed', "Failed: $errorMessage");
+        // Failed — auto-retry ONCE on a different device if retry_count is 0
+        if (($msg['retry_count'] ?? 0) == 0) {
+            // Get the current device that failed
+            $failedDevice = $db->prepare('SELECT device_id FROM messages WHERE id = ?');
+            $failedDevice->execute([$messageId]);
+            $failedDeviceId = $failedDevice->fetchColumn();
+
+            // Find another active device
+            $otherDevice = $db->prepare(
+                'SELECT device_id FROM devices WHERE user_id = ? AND is_active = 1 AND device_id != ? ORDER BY last_seen DESC LIMIT 1'
+            );
+            $otherDevice->execute([$authUserId, $failedDeviceId ?: '']);
+            $newDeviceId = $otherDevice->fetchColumn();
+
+            if ($newDeviceId) {
+                // Retry once on another device
+                $db->prepare('UPDATE messages SET status = "pending", device_id = ?, retry_count = 1, error_message = NULL WHERE id = ?')
+                   ->execute([$newDeviceId, $messageId]);
+                logAction($messageId, 'auto-retry', "Failed on device " . substr($failedDeviceId ?? '', 0, 8) . ", retrying on " . substr($newDeviceId, 0, 8));
+            } else {
+                // No other device available — mark as failed
+                $db->prepare('UPDATE messages SET status = "failed", error_message = ?, retry_count = 1 WHERE id = ?')
+                   ->execute([$errorMessage, $messageId]);
+                logAction($messageId, 'failed', "Failed: $errorMessage (no other device available)");
+            }
+        } else {
+            // Already retried once — mark as final failed
+            $db->prepare('UPDATE messages SET status = "failed", error_message = ? WHERE id = ?')
+               ->execute([$errorMessage, $messageId]);
+            logAction($messageId, 'failed', "Failed after retry: $errorMessage");
+        }
     }
 
     respond(200, ['success' => true]);

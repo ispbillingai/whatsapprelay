@@ -98,7 +98,7 @@ if ($isAdminUser && $adminView) {
 
 // Recent messages
 $where = $showAll ? '' : 'WHERE m.user_id = ?';
-$stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $where ORDER BY m.created_at DESC LIMIT 50");
+$stmt = $db->prepare("SELECT m.*, u.name as user_name, d.device_name FROM messages m LEFT JOIN users u ON m.user_id = u.id LEFT JOIN devices d ON m.device_id = d.device_id $where ORDER BY m.created_at DESC LIMIT 50");
 $stmt->execute($params);
 $recentMessages = $stmt->fetchAll();
 
@@ -899,6 +899,7 @@ $usersList = $stmt->fetchAll();
                         <th>Message</th>
                         <th>Type</th>
                         <th>Status</th>
+                        <th>Device</th>
                         <th>Time</th>
                         <?php if ($showAll): ?><th>User</th><?php endif; ?>
                     </tr>
@@ -915,6 +916,7 @@ $usersList = $stmt->fetchAll();
                             </span>
                         </td>
                         <td><span class="badge-status badge-<?= $msg['status'] ?>"><?= ucfirst($msg['status']) ?></span></td>
+                        <td class="small text-muted"><?= htmlspecialchars($msg['device_name'] ?? '-') ?></td>
                         <td class="text-muted small"><?= fmtTime($msg['created_at']) ?></td>
                         <?php if ($showAll): ?>
                         <td class="small"><?= htmlspecialchars($msg['user_name'] ?? 'N/A') ?></td>
