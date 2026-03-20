@@ -80,11 +80,132 @@ $activityStmt = $db->prepare(
 $activityStmt->execute();
 $activity = $activityStmt->fetchAll();
 
+// Historical server metrics for the selected period
+$metricsInterval = ['1h' => '1 HOUR', '6h' => '6 HOUR', '24h' => '24 HOUR', '7d' => '7 DAY', '30d' => '30 DAY'];
+$mInterval = $metricsInterval[$period] ?? '24 HOUR';
+
+// For longer periods, aggregate to reduce data points
+$metricsGroup = ['1h' => '', '6h' => 'MINUTE', '24h' => 'HOUR', '7d' => 'DAY', '30d' => 'DAY'];
+$mGroup = $metricsGroup[$period] ?? 'HOUR';
+
+if ($period === '1h' || $period === '6h') {
+    // Show all data points (every 10 seconds)
+    $metricsStmt = $db->prepare(
+        "SELECT cpu_load, ram_percent, disk_percent, mysql_connections, messages_pending, messages_sent_minute, active_devices,
+                DATE_FORMAT(created_at, '%H:%i:%s') as label
+         FROM server_metrics
+         WHERE created_at >= DATE_SUB(NOW(), INTERVAL $mInterval)
+         ORDER BY created_at ASC"
+    );
+} else {
+    // Aggregate for longer periods
+    $dateFmt = $period === '24h' ? '%H:00' : '%m/%d';
+    $metricsStmt = $db->prepare(
+        "SELECT ROUND(AVG(cpu_load),2) as cpu_load, ROUND(AVG(ram_percent),2) as ram_percent,
+                ROUND(AVG(disk_percent),2) as disk_percent, ROUND(AVG(mysql_connections)) as mysql_connections,
+                ROUND(AVG(messages_pending)) as messages_pending, SUM(messages_sent_minute) as messages_sent_minute,
+                ROUND(AVG(active_devices)) as active_devices,
+                DATE_FORMAT(created_at, '$dateFmt') as label
+         FROM server_metrics
+         WHERE created_at >= DATE_SUB(NOW(), INTERVAL $mInterval)
+         GROUP BY label
+         ORDER BY MIN(created_at) ASC"
+    );
+}
+$metricsStmt->execute();
+$metrics = $metricsStmt->fetchAll();
+
 renderHeader('Server Status', 'server-status');
 ?>
 
+<?php if (empty($metrics)): ?>
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle"></i> <strong>No historical data yet.</strong> Set up the cron job to start collecting metrics:
+    <code class="d-block mt-2 p-2 bg-dark text-light rounded">* * * * * php /var/www/html/whatsapp/cron-metrics.php</code>
+    <small class="text-muted">This collects CPU, RAM, disk, and message stats every 10 seconds. Data appears here within 1 minute.</small>
+</div>
+<?php endif; ?>
+
+<!-- Server Resource Charts -->
+<?php if (!empty($metrics)): ?>
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cpu"></i> CPU & RAM History</span>
+                <div class="btn-group btn-group-sm">
+                    <?php foreach (['1h' => '1H', '6h' => '6H', '24h' => '24H', '7d' => '7D', '30d' => '30D'] as $key => $label): ?>
+                    <a href="?period=<?= $key ?>" class="btn <?= $period === $key ? 'btn-primary' : 'btn-outline-secondary' ?>"><?= $label ?></a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="cpuRamChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header py-3"><i class="bi bi-envelope"></i> Message Throughput</div>
+            <div class="card-body">
+                <canvas id="throughputChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var mLabels = <?= json_encode(array_column($metrics, 'label')) ?>;
+var mCpu = <?= json_encode(array_map(fn($r) => floatval($r['cpu_load']), $metrics)) ?>;
+var mRam = <?= json_encode(array_map(fn($r) => floatval($r['ram_percent']), $metrics)) ?>;
+var mPending = <?= json_encode(array_map(fn($r) => intval($r['messages_pending']), $metrics)) ?>;
+var mSent = <?= json_encode(array_map(fn($r) => intval($r['messages_sent_minute']), $metrics)) ?>;
+var mDevices = <?= json_encode(array_map(fn($r) => intval($r['active_devices']), $metrics)) ?>;
+var mConn = <?= json_encode(array_map(fn($r) => intval($r['mysql_connections']), $metrics)) ?>;
+
+// Reduce labels for readability (show every Nth)
+var step = Math.max(1, Math.floor(mLabels.length / 20));
+var displayLabels = mLabels.map((l, i) => i % step === 0 ? l : '');
+
+new Chart(document.getElementById('cpuRamChart'), {
+    type: 'line',
+    data: {
+        labels: displayLabels,
+        datasets: [
+            { label: 'CPU Load', data: mCpu, borderColor: '#FF9800', backgroundColor: 'rgba(255,152,0,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'RAM %', data: mRam, borderColor: '#2196F3', backgroundColor: 'rgba(33,150,243,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'MySQL Conn', data: mConn, borderColor: '#9C27B0', fill: false, tension: 0.3, pointRadius: 0, borderDash: [3,3] }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10 } } },
+        scales: { y: { beginAtZero: true }, x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 15 } } },
+        interaction: { intersect: false, mode: 'index' }
+    }
+});
+
+new Chart(document.getElementById('throughputChart'), {
+    type: 'line',
+    data: {
+        labels: displayLabels,
+        datasets: [
+            { label: 'Sent/min', data: mSent, borderColor: '#25D366', backgroundColor: 'rgba(37,211,102,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'Pending', data: mPending, borderColor: '#FF9800', fill: false, tension: 0.3, pointRadius: 0 },
+            { label: 'Active Devices', data: mDevices, borderColor: '#2196F3', fill: false, tension: 0.3, pointRadius: 0, borderDash: [3,3] }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10 } } },
+        scales: { y: { beginAtZero: true }, x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 15 } } },
+        interaction: { intersect: false, mode: 'index' }
+    }
+});
+</script>
+<?php endif; ?>
+
 <!-- Activity Chart -->
-<div class="card mb-4">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <span><i class="bi bi-activity"></i> Message Activity</span>
         <div class="btn-group btn-group-sm">

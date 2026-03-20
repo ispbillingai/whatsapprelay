@@ -69,6 +69,23 @@ function runMigrations() {
             INDEX idx_device_id (device_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS device_id VARCHAR(64) NULL AFTER api_key_id",
+        "CREATE TABLE IF NOT EXISTS server_metrics (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            cpu_load DECIMAL(5,2) DEFAULT 0,
+            ram_percent DECIMAL(5,2) DEFAULT 0,
+            ram_used_mb INT DEFAULT 0,
+            ram_total_mb INT DEFAULT 0,
+            disk_percent DECIMAL(5,2) DEFAULT 0,
+            disk_used_gb DECIMAL(8,2) DEFAULT 0,
+            disk_total_gb DECIMAL(8,2) DEFAULT 0,
+            mysql_connections INT DEFAULT 0,
+            mysql_queries INT DEFAULT 0,
+            messages_pending INT DEFAULT 0,
+            messages_sent_minute INT DEFAULT 0,
+            active_devices INT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_accessibility TINYINT(1) DEFAULT 0",
         "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_notification TINYINT(1) DEFAULT 0",
         "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_battery TINYINT(1) DEFAULT 0",
