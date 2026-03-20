@@ -35,15 +35,20 @@ function getCurrentUser() {
     return $user;
 }
 
-/**
- * Convert a UTC datetime from the database to the user's local timezone for display.
- * DB stores in UTC (MySQL NOW()), this converts for display.
- */
-function localTime($utcDatetime, $format = 'M d H:i') {
-    if (empty($utcDatetime)) return '-';
-    $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));
-    $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
-    return $dt->format($format);
+if (!function_exists('localTime')) {
+    /**
+     * Convert a UTC datetime from the database to the user's local timezone for display.
+     */
+    function localTime($utcDatetime, $format = 'M d H:i') {
+        if (empty($utcDatetime)) return '-';
+        try {
+            $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));
+            $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
+            return $dt->format($format);
+        } catch (Exception $e) {
+            return $utcDatetime;
+        }
+    }
 }
 
 function getUserTimezone() {
