@@ -16,8 +16,9 @@ txt.txt
 # Server folder (files are at repo root instead)
 server/
 
-# Server config (has DB credentials - differs per environment)
+# Server config & schema (has credentials - differs per environment)
 config.php
+db.sql
 
 # OS files
 .DS_Store
