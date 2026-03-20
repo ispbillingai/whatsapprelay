@@ -160,6 +160,7 @@ try {
     $chartData = $chartStmt->fetchAll();
 } catch (Exception $e) {
     error_log("Chart query error: " . $e->getMessage());
+    $chartError = $e->getMessage();
     $chartData = [];
 }
 
@@ -732,13 +733,20 @@ $usersList = $stmt->fetchAll();
     </div>
 </div>
 
-<!-- Debug: <?= count($chartData) ?> chart rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?>, phpTZ=<?= date_default_timezone_get() ?>, now=<?= date('Y-m-d H:i:s') ?>, userId=<?= $userId ?>, sql=<?= htmlspecialchars(substr($chartSql, 0, 120)) ?>, params=<?= json_encode($chartParams2) ?> -->
+<!-- Debug: <?= count($chartData) ?> rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?>, offset=<?= $offsetHours ?>h -->
 <?php
-// Quick test query
-$testStmt = $db->query("SELECT COUNT(*) as cnt, MIN(created_at) as first_msg, MAX(created_at) as last_msg FROM messages");
-$testRow = $testStmt->fetch();
+// Direct test - does a simple query with same params work?
+$testSql = "SELECT COUNT(*) as cnt FROM messages WHERE created_at >= ? " . ($showAll ? '' : 'AND user_id = ?');
+$testParams = $showAll ? [$chartParams2[0]] : [$chartParams2[0], $chartParams2[1]];
+$testStmt = $db->prepare($testSql);
+$testStmt->execute($testParams);
+$testCount = $testStmt->fetch()['cnt'];
+
+// Also test with NO filters at all
+$rawCount = $db->query("SELECT COUNT(*) as cnt FROM messages WHERE created_at >= '2026-01-01'")->fetch()['cnt'];
+$rawUser = $db->query("SELECT COUNT(*) as cnt FROM messages WHERE user_id = $userId")->fetch()['cnt'];
 ?>
-<!-- TestData: total=<?= $testRow['cnt'] ?>, first=<?= $testRow['first_msg'] ?>, last=<?= $testRow['last_msg'] ?> -->
+<!-- Test: filterCount=<?= $testCount ?>, param0=<?= $chartParams2[0] ?>, rawAll=<?= $rawCount ?>, rawUser=<?= $rawUser ?>, chartError=<?= isset($chartError) ? $chartError : 'none' ?> -->
 <script>
 (function() {
     var labels = <?= json_encode(array_column($chartData, 'label')) ?>;
