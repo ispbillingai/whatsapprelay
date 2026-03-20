@@ -241,11 +241,22 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
     }
 
     $db = getDB();
-    $assignedDevice = assignDevice($auth['user_id'], $whatsappType);
-    $stmt = $db->prepare(
-        'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, 0)'
-    );
-    $stmt->execute([$auth['user_id'], $auth['key_id'], $assignedDevice, $phone, $message, $whatsappType]);
+    $assignedDevice = null;
+    try { $assignedDevice = assignDevice($auth['user_id'], $whatsappType); } catch (Exception $e) {}
+
+    try {
+        // Try with device_id column
+        $stmt = $db->prepare(
+            'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, 0)'
+        );
+        $stmt->execute([$auth['user_id'], $auth['key_id'], $assignedDevice, $phone, $message, $whatsappType]);
+    } catch (Exception $e) {
+        // Fallback: insert without device_id if column doesn't exist
+        $stmt = $db->prepare(
+            'INSERT INTO messages (user_id, api_key_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, 0)'
+        );
+        $stmt->execute([$auth['user_id'], $auth['key_id'], $phone, $message, $whatsappType]);
+    }
     $messageId = $db->lastInsertId();
 
     incrementUsage($auth['user_id']);
@@ -305,11 +316,20 @@ if ($path === '/send' && $method === 'POST') {
     }
 
     $db = getDB();
-    $assignedDevice = assignDevice($authUserId, $whatsappType);
-    $stmt = $db->prepare(
-        'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    );
-    $stmt->execute([$authUserId, $authKeyId, $assignedDevice, $phone, $message, $whatsappType, $priority]);
+    $assignedDevice = null;
+    try { $assignedDevice = assignDevice($authUserId, $whatsappType); } catch (Exception $e) {}
+
+    try {
+        $stmt = $db->prepare(
+            'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([$authUserId, $authKeyId, $assignedDevice, $phone, $message, $whatsappType, $priority]);
+    } catch (Exception $e) {
+        $stmt = $db->prepare(
+            'INSERT INTO messages (user_id, api_key_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([$authUserId, $authKeyId, $phone, $message, $whatsappType, $priority]);
+    }
     $messageId = $db->lastInsertId();
 
     incrementUsage($authUserId);
