@@ -37,16 +37,15 @@ function getCurrentUser() {
 
 if (!function_exists('fmtTime')) {
     /**
-     * Convert a UTC datetime from the database to the user's local timezone for display.
+     * Format a datetime from the database for display.
+     * MySQL NOW() stores in server timezone, just format it directly.
      */
-    function fmtTime($utcDatetime, $format = 'M d H:i') {
-        if (empty($utcDatetime)) return '-';
+    function fmtTime($dbDatetime, $format = 'M d H:i') {
+        if (empty($dbDatetime)) return '-';
         try {
-            $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));
-            $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
-            return $dt->format($format);
+            return date($format, strtotime($dbDatetime));
         } catch (Exception $e) {
-            return $utcDatetime;
+            return $dbDatetime;
         }
     }
 }

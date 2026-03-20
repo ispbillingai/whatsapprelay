@@ -7,7 +7,6 @@ $db = getDB();
 $userId = $_SESSION['user_id'];
 $isAdminUser = isAdmin();
 
-error_log("=== MESSAGES PAGE LOADED === User=$userId, Admin=" . ($isAdminUser ? 'yes' : 'no'));
 
 // Filters
 $filterStatus = $_GET['status'] ?? '';
@@ -57,12 +56,6 @@ $params[] = $offset;
 $stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $whereClause ORDER BY m.created_at DESC LIMIT ? OFFSET ?");
 $stmt->execute($params);
 $messages = $stmt->fetchAll();
-
-error_log("Messages query: total=$total, fetched=" . count($messages) . ", page=$page, where=$whereClause");
-if (!empty($messages)) {
-    error_log("First msg: id={$messages[0]['id']}, created_at={$messages[0]['created_at']}, sent_at=" . ($messages[0]['sent_at'] ?? 'null'));
-    error_log("Last msg: id={$messages[count($messages)-1]['id']}, created_at={$messages[count($messages)-1]['created_at']}");
-}
 
 // Handle retry action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['retry_id'])) {

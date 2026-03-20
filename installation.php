@@ -121,6 +121,10 @@ renderHeader('Installation Guide', 'installation');
                     <li>Tap <strong>"Allow restricted settings"</strong></li>
                     <li>Confirm with your <strong>PIN, pattern, or fingerprint</strong></li>
                 </ol>
+                <div class="alert alert-warning py-2 small mb-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Important:</strong> You MUST navigate manually to <strong>Settings > Apps > FreeISP WA</strong> to see the three dots menu. Opening app info directly from the app or from "App Settings" shortcut may NOT show the three dots menu on some phones (Samsung, Xiaomi, etc.).
+                </div>
                 <div class="alert alert-info py-2 small mb-0">
                     <i class="bi bi-lightbulb-fill"></i>
                     <strong>Why?</strong> Android 13+ blocks certain permissions for apps installed outside the Play Store. This is a one-time step and does not affect your phone's security.

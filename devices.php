@@ -7,8 +7,6 @@ $db = getDB();
 $userId = $_SESSION['user_id'];
 $isAdminUser = isAdmin();
 
-error_log("=== DEVICES PAGE LOADED ===");
-error_log("User ID: $userId, isAdmin: " . ($isAdminUser ? 'yes' : 'no'));
 
 // Handle device actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
@@ -54,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
 }
 
 // Fetch devices
-error_log("Fetching devices...");
 try {
     if ($isAdminUser) {
         $stmt = $db->query(
@@ -81,12 +78,7 @@ try {
         $stmt->execute([$userId]);
     }
     $devices = $stmt->fetchAll();
-    error_log("Fetched " . count($devices) . " devices");
-    foreach ($devices as $i => $dev) {
-        error_log("Device[$i]: id={$dev['device_id']}, name={$dev['device_name']}, active={$dev['is_active']}, last_seen={$dev['last_seen']}, delivered={$dev['delivered']}, last_status={$dev['last_msg_status']}");
-    }
 } catch (Exception $e) {
-    error_log("DEVICE QUERY ERROR: " . $e->getMessage());
     $devices = [];
 }
 
