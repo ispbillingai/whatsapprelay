@@ -6,6 +6,7 @@ requireLogin();
 $db = getDB();
 $userId = $_SESSION['user_id'];
 $isAdminUser = isAdmin();
+getCurrentUser(); // Sets timezone early so all date calculations use local time
 
 // Save WhatsApp type preference (AJAX)
 if (isset($_GET['set_wa_type']) && in_array($_GET['set_wa_type'], ['whatsapp', 'whatsapp_business', 'load_balance'])) {
@@ -121,7 +122,10 @@ try {
     $monthStartUTC = gmdate('Y-m-d H:i:s', strtotime('-30 days midnight'));
 
     // Add timezone offset hours to DB times for correct local grouping
-    $offsetHours = intval(date('Z') / 3600); // e.g. 3 for Africa/Nairobi
+    $offsetHours = intval(date('Z') / 3600);
+    if ($offsetHours === 0 && date_default_timezone_get() === 'Africa/Nairobi') {
+        $offsetHours = 3; // Fallback for Africa/Nairobi
+    }
     $localExpr = $offsetHours >= 0
         ? "DATE_ADD(created_at, INTERVAL $offsetHours HOUR)"
         : "DATE_SUB(created_at, INTERVAL " . abs($offsetHours) . " HOUR)";
