@@ -25,9 +25,23 @@ function requireLogin() {
 function getCurrentUser() {
     if (!isLoggedIn()) return null;
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, name, email, role, created_at, last_login FROM users WHERE id = ? AND is_active = 1');
+    $stmt = $db->prepare('SELECT id, name, email, role, created_at, last_login, IFNULL(timezone, "Africa/Nairobi") as timezone FROM users WHERE id = ? AND is_active = 1');
     $stmt->execute([$_SESSION['user_id']]);
-    return $stmt->fetch();
+    $user = $stmt->fetch();
+    // Apply user's timezone globally
+    if ($user && !empty($user['timezone'])) {
+        date_default_timezone_set($user['timezone']);
+    }
+    return $user;
+}
+
+function getUserTimezone() {
+    if (!isLoggedIn()) return 'Africa/Nairobi';
+    $db = getDB();
+    $stmt = $db->prepare('SELECT IFNULL(timezone, "Africa/Nairobi") as timezone FROM users WHERE id = ?');
+    $stmt->execute([$_SESSION['user_id']]);
+    $tz = $stmt->fetchColumn();
+    return $tz ?: 'Africa/Nairobi';
 }
 
 function login($email, $password) {

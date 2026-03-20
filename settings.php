@@ -5,6 +5,7 @@ requireLogin();
 
 $db = getDB();
 $user = getCurrentUser();
+$userTimezone = $user['timezone'] ?? 'Africa/Nairobi';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     $action = $_POST['action'] ?? '';
@@ -12,16 +13,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
     if ($action === 'update_profile') {
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
+        $timezone = trim($_POST['timezone'] ?? 'Africa/Nairobi');
+
+        // Validate timezone
+        if (!in_array($timezone, timezone_identifiers_list())) {
+            $timezone = 'Africa/Nairobi';
+        }
 
         if ($name && $email) {
-            // Check email not taken by another user
             $check = $db->prepare('SELECT id FROM users WHERE email = ? AND id != ?');
             $check->execute([$email, $user['id']]);
             if ($check->fetch()) {
                 flash('Email already in use by another account', 'error');
             } else {
-                $db->prepare('UPDATE users SET name = ?, email = ? WHERE id = ?')
-                   ->execute([$name, $email, $user['id']]);
+                $db->prepare('UPDATE users SET name = ?, email = ?, timezone = ? WHERE id = ?')
+                   ->execute([$name, $email, $timezone, $user['id']]);
                 $_SESSION['user_name'] = $name;
                 flash('Profile updated successfully');
             }
@@ -77,6 +83,37 @@ renderHeader('Settings', 'settings');
                     <div class="mb-3">
                         <label class="form-label">Email</label>
                         <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($user['email']) ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Timezone</label>
+                        <select name="timezone" class="form-select">
+                            <?php
+                            $regions = [
+                                'Africa' => DateTimeZone::AFRICA,
+                                'Asia' => DateTimeZone::ASIA,
+                                'Europe' => DateTimeZone::EUROPE,
+                                'America' => DateTimeZone::AMERICA,
+                                'Pacific' => DateTimeZone::PACIFIC,
+                                'Indian Ocean' => DateTimeZone::INDIAN,
+                                'Atlantic' => DateTimeZone::ATLANTIC,
+                            ];
+                            foreach ($regions as $label => $region):
+                                $tzList = DateTimeZone::listIdentifiers($region);
+                            ?>
+                                <optgroup label="<?= $label ?>">
+                                <?php foreach ($tzList as $tz):
+                                    $now = new DateTime('now', new DateTimeZone($tz));
+                                    $offset = $now->format('P');
+                                    $display = str_replace('_', ' ', str_replace('/', ' / ', $tz));
+                                ?>
+                                    <option value="<?= $tz ?>" <?= $userTimezone === $tz ? 'selected' : '' ?>>
+                                        (UTC<?= $offset ?>) <?= $display ?>
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">Times on the dashboard will display in your timezone</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Role</label>
