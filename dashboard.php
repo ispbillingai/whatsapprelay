@@ -95,11 +95,9 @@ if ($isAdminUser && $adminView) {
     $activeUsers = $stmt->fetch()['cnt'];
 }
 
-// Recent messages with pagination
-$perPage = intval($_GET['per_page'] ?? 50);
-if (!in_array($perPage, [50, 100, 200])) $perPage = 50;
+// Recent messages - fetch last 200 for DataTables to handle client-side
 $where = $showAll ? '' : 'WHERE m.user_id = ?';
-$stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $where ORDER BY m.created_at DESC LIMIT $perPage");
+$stmt = $db->prepare("SELECT m.*, u.name as user_name FROM messages m LEFT JOIN users u ON m.user_id = u.id $where ORDER BY m.created_at DESC LIMIT 200");
 $stmt->execute($params);
 $recentMessages = $stmt->fetchAll();
 
@@ -757,16 +755,9 @@ $usersList = $stmt->fetchAll();
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center py-3">
         <span><i class="bi bi-clock-history"></i> Recent Messages</span>
-        <div class="d-flex align-items-center gap-2">
-            <select class="form-select form-select-sm" style="width:auto;" onchange="window.location='?per_page='+this.value">
-                <option value="50" <?= $perPage == 50 ? 'selected' : '' ?>>50</option>
-                <option value="100" <?= $perPage == 100 ? 'selected' : '' ?>>100</option>
-                <option value="200" <?= $perPage == 200 ? 'selected' : '' ?>>200</option>
-            </select>
-            <a href="messages.php" class="btn btn-sm btn-outline-secondary">View All</a>
-        </div>
+        <a href="messages.php" class="btn btn-sm btn-outline-secondary">View All</a>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body">
         <?php if (empty($recentMessages)): ?>
         <div class="empty-state">
             <i class="bi bi-inbox"></i>
@@ -775,40 +766,54 @@ $usersList = $stmt->fetchAll();
             <a href="send.php" class="btn btn-wa btn-sm">Send a Message</a>
         </div>
         <?php else: ?>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Phone</th>
-                        <th>Message</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Time</th>
-                        <?php if ($showAll): ?><th>User</th><?php endif; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($recentMessages as $msg): ?>
-                    <tr>
-                        <td><strong>#<?= $msg['id'] ?></strong></td>
-                        <td><i class="bi bi-telephone"></i> <?= htmlspecialchars($msg['phone']) ?></td>
-                        <td class="msg-preview"><?= htmlspecialchars($msg['message']) ?></td>
-                        <td>
-                            <span class="badge bg-<?= $msg['whatsapp_type'] === 'whatsapp_business' ? 'info' : 'success' ?>">
-                                <?= $msg['whatsapp_type'] === 'whatsapp_business' ? 'Business' : 'Personal' ?>
-                            </span>
-                        </td>
-                        <td><span class="badge-status badge-<?= $msg['status'] ?>"><?= ucfirst($msg['status']) ?></span></td>
-                        <td class="text-muted small"><?= date('M d H:i', strtotime($msg['created_at'])) ?></td>
-                        <?php if ($showAll): ?>
-                        <td class="small"><?= htmlspecialchars($msg['user_name'] ?? 'N/A') ?></td>
-                        <?php endif; ?>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+        <table id="messagesTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Phone</th>
+                    <th>Message</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <?php if ($showAll): ?><th>User</th><?php endif; ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($recentMessages as $msg): ?>
+                <tr>
+                    <td>#<?= $msg['id'] ?></td>
+                    <td><?= htmlspecialchars($msg['phone']) ?></td>
+                    <td class="msg-preview"><?= htmlspecialchars($msg['message']) ?></td>
+                    <td>
+                        <span class="badge bg-<?= $msg['whatsapp_type'] === 'whatsapp_business' ? 'info' : 'success' ?>">
+                            <?= $msg['whatsapp_type'] === 'whatsapp_business' ? 'Biz' : 'WA' ?>
+                        </span>
+                    </td>
+                    <td><span class="badge-status badge-<?= $msg['status'] ?>"><?= ucfirst($msg['status']) ?></span></td>
+                    <td data-order="<?= $msg['created_at'] ?>"><?= date('M d H:i', strtotime($msg['created_at'])) ?></td>
+                    <?php if ($showAll): ?>
+                    <td><?= htmlspecialchars($msg['user_name'] ?? 'N/A') ?></td>
+                    <?php endif; ?>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <script>
+        $(document).ready(function() {
+            $('#messagesTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 25,
+                lengthMenu: [[25, 50, 100, -1], [25, 50, 100, 'All']],
+                language: {
+                    search: '<i class="bi bi-search"></i>',
+                    searchPlaceholder: 'Search messages...',
+                    lengthMenu: 'Show _MENU_ entries',
+                    info: 'Showing _START_ to _END_ of _TOTAL_ messages'
+                },
+                dom: '<"row align-items-center"<"col-md-6"l><"col-md-6"f>>rtip'
+            });
+        });
+        </script>
         <?php endif; ?>
     </div>
 </div>
