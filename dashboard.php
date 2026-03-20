@@ -675,7 +675,7 @@ $usersList = $stmt->fetchAll();
                         <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'primary' : 'secondary' ?>"><?= ucfirst($u['role']) ?></span></td>
                         <td><?= number_format($u['total_messages']) ?></td>
                         <td class="text-success"><?= number_format($u['delivered']) ?></td>
-                        <td class="small text-muted"><?= $u['last_login'] ? date('M d H:i', strtotime($u['last_login'])) : 'Never' ?></td>
+                        <td class="small text-muted"><?= $u['last_login'] ? localTime($u['last_login']) : 'Never' ?></td>
                         <td>
                             <?php if ($u['is_active']): ?>
                                 <span class="badge bg-success">Active</span>
@@ -915,7 +915,7 @@ $usersList = $stmt->fetchAll();
                             </span>
                         </td>
                         <td><span class="badge-status badge-<?= $msg['status'] ?>"><?= ucfirst($msg['status']) ?></span></td>
-                        <td class="text-muted small"><?= date('M d H:i', strtotime($msg['created_at'])) ?></td>
+                        <td class="text-muted small"><?= localTime($msg['created_at']) ?></td>
                         <?php if ($showAll): ?>
                         <td class="small"><?= htmlspecialchars($msg['user_name'] ?? 'N/A') ?></td>
                         <?php endif; ?>

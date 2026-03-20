@@ -226,7 +226,7 @@ renderHeader('Devices', 'devices');
                         <td class="text-success"><?= number_format($dev['delivered']) ?></td>
                         <td><?= $dev['pending_msgs'] ?></td>
                         <td class="small text-muted">
-                            <?= $dev['last_seen'] ? date('M d H:i:s', strtotime($dev['last_seen'])) : 'Never' ?>
+                            <?= $dev['last_seen'] ? localTime($dev['last_seen'], 'M d H:i:s') : 'Never' ?>
                         </td>
                         <td>
                             <div class="d-flex gap-1">
