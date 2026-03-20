@@ -114,28 +114,35 @@ try {
     $userFilter = $showAll ? '' : 'AND user_id = ?';
     $chartParams2 = $showAll ? [] : [$userId];
 
-    // Build chart query based on period
+    // Build chart query - use PHP dates to avoid MySQL timezone issues
+    $todayStart = date('Y-m-d 00:00:00');
+    $weekStart = date('Y-m-d 00:00:00', strtotime('-7 days'));
+    $monthStart = date('Y-m-d 00:00:00', strtotime('-30 days'));
+
     if ($chartPeriod === 'today') {
         $chartSql = "SELECT CONCAT(HOUR(created_at), ':00') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
-         FROM messages WHERE DATE(created_at) = CURDATE() $userFilter
+         FROM messages WHERE created_at >= ? $userFilter
          GROUP BY HOUR(created_at) ORDER BY HOUR(created_at) ASC";
+        array_unshift($chartParams2, $todayStart);
     } elseif ($chartPeriod === 'week') {
         $chartSql = "SELECT DATE_FORMAT(created_at, '%a %d') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
-         FROM messages WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) $userFilter
+         FROM messages WHERE created_at >= ? $userFilter
          GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC";
+        array_unshift($chartParams2, $weekStart);
     } else {
         $chartSql = "SELECT DATE_FORMAT(created_at, '%b %d') as label,
             SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired
-         FROM messages WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) $userFilter
+         FROM messages WHERE created_at >= ? $userFilter
          GROUP BY DATE(created_at) ORDER BY DATE(created_at) ASC";
+        array_unshift($chartParams2, $monthStart);
     }
     $chartStmt = $db->prepare($chartSql);
     $chartStmt->execute($chartParams2);
@@ -714,7 +721,7 @@ $usersList = $stmt->fetchAll();
     </div>
 </div>
 
-<!-- Debug: <?= count($chartData) ?> chart rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?> -->
+<!-- Debug: <?= count($chartData) ?> chart rows, period=<?= $chartPeriod ?>, showAll=<?= $showAll ? 'yes' : 'no' ?>, phpTZ=<?= date_default_timezone_get() ?>, now=<?= date('Y-m-d H:i:s') ?> -->
 <script>
 (function() {
     var labels = <?= json_encode(array_column($chartData, 'label')) ?>;
