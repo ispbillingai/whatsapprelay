@@ -267,12 +267,30 @@ renderHeader('Devices', 'devices');
     </div>
 </div>
 
-<div class="mt-3 small text-muted">
-    <i class="bi bi-info-circle"></i> <strong>Status guide:</strong>
-    <span class="badge bg-success">Online</span> = last message was delivered successfully or no messages yet.
-    <span class="badge bg-danger">Offline</span> = last message sent by this device failed.
-    <span class="badge bg-warning text-dark">New</span> = device just registered, hasn't polled yet.
-    Service badges show which permissions are enabled on the phone.
+<div class="card mt-3">
+    <div class="card-body small">
+        <h6 class="fw-bold mb-3"><i class="bi bi-info-circle"></i> Status & Badge Guide</h6>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <p class="fw-bold mb-2">Device Status</p>
+                <table class="table table-sm mb-0">
+                    <tr><td><span class="badge bg-success">Online</span></td><td>Device is active — last message was delivered successfully, or no messages have been sent yet</td></tr>
+                    <tr><td><span class="badge bg-danger">Offline</span></td><td>Device has a problem — the last message this device tried to send failed</td></tr>
+                    <tr><td><span class="badge bg-secondary">Disabled</span></td><td>Device has been manually disabled by admin — it will not receive any messages</td></tr>
+                    <tr><td><span class="badge bg-warning text-dark">New</span></td><td>Device just registered and hasn't started polling yet — start the relay service on the phone</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <p class="fw-bold mb-2">Service Badges (under device name)</p>
+                <table class="table table-sm mb-0">
+                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-hand-index"></i> ON</span></td><td><strong>Accessibility Service</strong> — required for sending messages to new contacts. If OFF, the app cannot auto-tap the send button in WhatsApp</td></tr>
+                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-bell"></i> ON</span></td><td><strong>Notification Listener</strong> — enables silent background sending via WhatsApp notification replies. If OFF, messages only send when WhatsApp opens on screen</td></tr>
+                    <tr><td><span class="badge bg-success" style="font-size:10px;"><i class="bi bi-battery-charging"></i> OK</span></td><td><strong>Battery Optimization</strong> — disabled means Android won't kill the app in background. If OFF, the relay service may stop unexpectedly</td></tr>
+                    <tr><td><span class="badge bg-danger" style="font-size:10px;"><i class="bi bi-hand-index"></i> OFF</span></td><td>Service is not enabled — open the FreeISP WA app on the phone to enable it</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php renderFooter(); ?>
