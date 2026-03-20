@@ -104,23 +104,39 @@ function incrementUsage($userId) {
 }
 
 // Pick the next active device for round-robin assignment
+// $waType: the whatsapp_type of the message being queued
 // Returns device_id or null if no active devices
-function assignDevice($userId) {
+function assignDevice($userId, $waType = null) {
     $db = getDB();
     // Get active devices that were seen in the last 5 minutes
     $stmt = $db->prepare(
-        'SELECT device_id FROM devices
+        'SELECT device_id, whatsapp_type FROM devices
          WHERE user_id = ? AND is_active = 1 AND last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
          ORDER BY last_seen ASC'
     );
     $stmt->execute([$userId]);
-    $devices = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $allDevices = $stmt->fetchAll();
 
-    if (empty($devices)) return null;
-    if (count($devices) === 1) return $devices[0];
+    if (empty($allDevices)) return null;
+
+    // Filter devices that support the message's whatsapp_type
+    $compatibleDevices = [];
+    foreach ($allDevices as $dev) {
+        $devType = $dev['whatsapp_type'] ?? 'both';
+        if ($devType === 'both' || $devType === $waType || $waType === null) {
+            $compatibleDevices[] = $dev['device_id'];
+        }
+    }
+
+    // Fallback to all devices if none match the type
+    if (empty($compatibleDevices)) {
+        $compatibleDevices = array_column($allDevices, 'device_id');
+    }
+
+    if (count($compatibleDevices) === 1) return $compatibleDevices[0];
 
     // Round-robin: pick the device with the fewest recent pending/sent messages
-    $placeholders = implode(',', array_fill(0, count($devices), '?'));
+    $placeholders = implode(',', array_fill(0, count($compatibleDevices), '?'));
     $stmt = $db->prepare(
         "SELECT d.device_id, COUNT(m.id) as msg_count
          FROM devices d
@@ -130,9 +146,9 @@ function assignDevice($userId) {
          ORDER BY msg_count ASC, d.last_seen DESC
          LIMIT 1"
     );
-    $stmt->execute(array_merge([$userId], $devices));
+    $stmt->execute(array_merge([$userId], $compatibleDevices));
     $result = $stmt->fetch();
-    return $result ? $result['device_id'] : $devices[0];
+    return $result ? $result['device_id'] : $compatibleDevices[0];
 }
 
 // Log message action
@@ -225,7 +241,7 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
     }
 
     $db = getDB();
-    $assignedDevice = assignDevice($auth['user_id']);
+    $assignedDevice = assignDevice($auth['user_id'], $whatsappType);
     $stmt = $db->prepare(
         'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, 0)'
     );
@@ -289,7 +305,7 @@ if ($path === '/send' && $method === 'POST') {
     }
 
     $db = getDB();
-    $assignedDevice = assignDevice($authUserId);
+    $assignedDevice = assignDevice($authUserId, $whatsappType);
     $stmt = $db->prepare(
         'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
@@ -394,9 +410,20 @@ if ($path === '/pending' && $method === 'GET') {
     if ($deviceId) {
         $db->prepare(
             'UPDATE messages SET device_id = NULL
-             WHERE status = "pending" AND user_id = ? AND device_id IS NOT NULL
+             WHERE status = "pending" AND user_id = ? AND device_id IS NOT NULL AND device_id != ?
              AND device_id IN (SELECT device_id FROM devices WHERE user_id = ? AND last_seen < DATE_SUB(NOW(), INTERVAL 2 MINUTE))'
-        )->execute([$authUserId, $authUserId]);
+        )->execute([$authUserId, $deviceId, $authUserId]);
+
+        // Reassign stuck "sent" messages (dispatched but not delivered in 3 minutes) back to pending
+        $reassigned = $db->prepare(
+            'UPDATE messages SET status = "pending", device_id = NULL
+             WHERE status = "sent" AND user_id = ? AND device_id != ?
+             AND created_at < DATE_SUB(NOW(), INTERVAL 3 MINUTE)'
+        );
+        $reassigned->execute([$authUserId, $deviceId]);
+        if ($reassigned->rowCount() > 0) {
+            error_log("Reassigned " . $reassigned->rowCount() . " stuck messages from other devices for user $authUserId");
+        }
     }
 
     // Fetch pending messages: either assigned to this device or unassigned

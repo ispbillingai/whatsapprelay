@@ -29,6 +29,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
         }
     }
 
+    if ($action === 'set_wa_type' && $deviceId) {
+        $waType = $_POST['wa_type'] ?? 'both';
+        if (in_array($waType, ['whatsapp', 'whatsapp_business', 'both'])) {
+            $where = $isAdminUser ? '' : ' AND user_id = ?';
+            $params = $isAdminUser ? [$waType, $deviceId] : [$waType, $deviceId, $userId];
+            $db->prepare("UPDATE devices SET whatsapp_type = ? WHERE device_id = ? $where")->execute($params);
+            flash('Device WhatsApp type updated');
+        }
+    }
+
     if ($action === 'delete' && $deviceId) {
         $where = $isAdminUser ? '' : ' AND user_id = ?';
         $params = $isAdminUser ? [$deviceId] : [$deviceId, $userId];
@@ -130,6 +140,7 @@ renderHeader('Devices', 'devices');
                         <th>Status</th>
                         <th>Device</th>
                         <th>Device ID</th>
+                        <th>WhatsApp</th>
                         <?php if ($isAdminUser): ?><th>User</th><?php endif; ?>
                         <th>Delivered</th>
                         <th>Pending</th>
@@ -156,6 +167,18 @@ renderHeader('Devices', 'devices');
                             <strong><?= htmlspecialchars($dev['device_name']) ?></strong>
                         </td>
                         <td><code class="small"><?= htmlspecialchars($shortId) ?>...</code></td>
+                        <td>
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                                <input type="hidden" name="action" value="set_wa_type">
+                                <input type="hidden" name="device_id" value="<?= htmlspecialchars($dev['device_id']) ?>">
+                                <select name="wa_type" class="form-select form-select-sm" style="width:130px;" onchange="this.form.submit()">
+                                    <option value="both" <?= ($dev['whatsapp_type'] ?? 'both') === 'both' ? 'selected' : '' ?>>Both</option>
+                                    <option value="whatsapp" <?= ($dev['whatsapp_type'] ?? '') === 'whatsapp' ? 'selected' : '' ?>>Personal</option>
+                                    <option value="whatsapp_business" <?= ($dev['whatsapp_type'] ?? '') === 'whatsapp_business' ? 'selected' : '' ?>>Business</option>
+                                </select>
+                            </form>
+                        </td>
                         <?php if ($isAdminUser): ?>
                         <td class="small"><?= htmlspecialchars($dev['user_name'] ?? 'N/A') ?></td>
                         <?php endif; ?>
