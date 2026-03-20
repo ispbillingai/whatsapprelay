@@ -127,7 +127,11 @@ function renderHeader($title, $activePage = '') {
         body.dark-mode .border-danger { border-color: #5a2020 !important; }
         body.dark-mode .bg-light { background: #1a1a3e !important; color: #ddd; }
         body.dark-mode .bg-white { background: #16213e !important; }
-        body.dark-mode .badge-status { color: #fff; }
+        body.dark-mode .badge-pending { background: #e65100; color: #fff; }
+        body.dark-mode .badge-sent { background: #1565c0; color: #fff; }
+        body.dark-mode .badge-delivered { background: #2e7d32; color: #fff; }
+        body.dark-mode .badge-failed { background: #c62828; color: #fff; }
+        body.dark-mode .badge-expired { background: #6a1b9a; color: #fff; }
         body.dark-mode .accordion-button { background: #16213e; color: #ddd; }
         body.dark-mode .accordion-body { background: #1a1a2e; color: #ccc; }
         body.dark-mode code { color: #7ec8e3; }
