@@ -38,12 +38,15 @@ function getCurrentUser() {
 if (!function_exists('fmtTime')) {
     /**
      * Format a datetime from the database for display.
-     * MySQL NOW() stores in server timezone, just format it directly.
+     * Treats DB time as UTC+2 (server timezone), converts to user's PHP timezone.
      */
     function fmtTime($dbDatetime, $format = 'M d H:i') {
         if (empty($dbDatetime)) return '-';
         try {
-            return date($format, strtotime($dbDatetime));
+            // DB stores in server timezone (UTC+2), convert to display timezone
+            $dt = new DateTime($dbDatetime, new DateTimeZone('+02:00'));
+            $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
+            return $dt->format($format);
         } catch (Exception $e) {
             return $dbDatetime;
         }
