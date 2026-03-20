@@ -259,7 +259,7 @@ renderHeader('Devices', 'devices');
                             </div>
                         </td>
                     </tr>
-                    <?php } catch (Exception $e) { echo '<tr><td colspan="9" class="text-danger small">Error rendering device: ' . htmlspecialchars($e->getMessage()) . '</td></tr>'; } endforeach; ?>
+                    <?php } catch (Exception $e) { error_log("Device row error: " . $e->getMessage() . " | device_id=" . ($dev['device_id'] ?? 'null')); echo '<tr><td colspan="9" class="text-danger small">Error rendering device: ' . htmlspecialchars($e->getMessage()) . '</td></tr>'; } endforeach; ?>
                 </tbody>
             </table>
         </div>

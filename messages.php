@@ -188,7 +188,7 @@ renderHeader('Messages', 'messages');
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <?php } catch (Exception $e) { echo '<tr><td colspan="10" class="text-danger small">Error: ' . htmlspecialchars($e->getMessage()) . '</td></tr>'; } endforeach; ?>
+                    <?php } catch (Exception $e) { error_log("Message row error: " . $e->getMessage() . " | msg_id=" . ($msg['id'] ?? 'null')); echo '<tr><td colspan="10" class="text-danger small">Error: ' . htmlspecialchars($e->getMessage()) . '</td></tr>'; } endforeach; ?>
                 </tbody>
             </table>
         </div>
