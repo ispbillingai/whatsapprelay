@@ -39,12 +39,16 @@ function runMigrations() {
     $ran = true;
 
     $db = getDB();
-    $migrations = [
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20) NULL AFTER email",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password TINYINT(1) DEFAULT 0 AFTER password",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_type ENUM('whatsapp', 'whatsapp_business') DEFAULT 'whatsapp' AFTER is_active",
-        "ALTER TABLE users MODIFY COLUMN whatsapp_type ENUM('whatsapp', 'whatsapp_business', 'load_balance') DEFAULT 'whatsapp'",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(50) DEFAULT 'Africa/Nairobi' AFTER whatsapp_type",
+
+    // Helper: check if column exists before adding
+    function columnExists($db, $table, $column) {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+        $stmt->execute([$table, $column]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    // CREATE TABLE migrations (safe with IF NOT EXISTS)
+    $creates = [
         "CREATE TABLE IF NOT EXISTS subscriptions (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
@@ -59,7 +63,6 @@ function runMigrations() {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             INDEX idx_user_id (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-        "ALTER TABLE messages MODIFY COLUMN status ENUM('pending', 'sent', 'delivered', 'failed', 'expired') DEFAULT 'pending'",
         "CREATE TABLE IF NOT EXISTS devices (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
@@ -68,12 +71,14 @@ function runMigrations() {
             whatsapp_type ENUM('whatsapp', 'whatsapp_business', 'both') DEFAULT 'whatsapp',
             is_active TINYINT(1) DEFAULT 1,
             last_seen DATETIME NULL,
+            svc_accessibility TINYINT(1) DEFAULT 0,
+            svc_notification TINYINT(1) DEFAULT 0,
+            svc_battery TINYINT(1) DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             INDEX idx_user_id (user_id),
             INDEX idx_device_id (device_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS device_id VARCHAR(64) NULL AFTER api_key_id",
         "CREATE TABLE IF NOT EXISTS server_metrics (
             id INT AUTO_INCREMENT PRIMARY KEY,
             cpu_load DECIMAL(5,2) DEFAULT 0,
@@ -91,21 +96,42 @@ function runMigrations() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_accessibility TINYINT(1) DEFAULT 0",
-        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_notification TINYINT(1) DEFAULT 0",
-        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS svc_battery TINYINT(1) DEFAULT 0",
     ];
 
-    foreach ($migrations as $sql) {
+    foreach ($creates as $sql) {
+        try { $db->exec($sql); } catch (PDOException $e) { /* table exists */ }
+    }
+
+    // ADD COLUMN migrations (check first, MySQL doesn't support IF NOT EXISTS)
+    $columns = [
+        ['users', 'phone', "ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL AFTER email"],
+        ['users', 'must_change_password', "ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) DEFAULT 0 AFTER password"],
+        ['users', 'whatsapp_type', "ALTER TABLE users ADD COLUMN whatsapp_type ENUM('whatsapp', 'whatsapp_business', 'load_balance') DEFAULT 'whatsapp' AFTER is_active"],
+        ['users', 'timezone', "ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'Africa/Nairobi' AFTER whatsapp_type"],
+        ['messages', 'device_id', "ALTER TABLE messages ADD COLUMN device_id VARCHAR(64) NULL AFTER api_key_id"],
+        ['devices', 'svc_accessibility', "ALTER TABLE devices ADD COLUMN svc_accessibility TINYINT(1) DEFAULT 0"],
+        ['devices', 'svc_notification', "ALTER TABLE devices ADD COLUMN svc_notification TINYINT(1) DEFAULT 0"],
+        ['devices', 'svc_battery', "ALTER TABLE devices ADD COLUMN svc_battery TINYINT(1) DEFAULT 0"],
+    ];
+
+    foreach ($columns as [$table, $column, $sql]) {
         try {
-            $db->exec($sql);
-        } catch (PDOException $e) {
-            // Ignore duplicate column / already exists errors
-            if (strpos($e->getMessage(), 'Duplicate column') === false &&
-                strpos($e->getMessage(), 'already exists') === false) {
-                error_log("Migration error: " . $e->getMessage());
+            if (!columnExists($db, $table, $column)) {
+                $db->exec($sql);
             }
+        } catch (PDOException $e) {
+            // Ignore - column might already exist
         }
+    }
+
+    // MODIFY columns (always safe to run)
+    $modifies = [
+        "ALTER TABLE users MODIFY COLUMN whatsapp_type ENUM('whatsapp', 'whatsapp_business', 'load_balance') DEFAULT 'whatsapp'",
+        "ALTER TABLE messages MODIFY COLUMN status ENUM('pending', 'sent', 'delivered', 'failed', 'expired') DEFAULT 'pending'",
+    ];
+
+    foreach ($modifies as $sql) {
+        try { $db->exec($sql); } catch (PDOException $e) { /* ignore */ }
     }
 }
 
