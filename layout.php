@@ -111,6 +111,9 @@ function renderHeader($title, $activePage = '') {
             <a href="api-keys.php" class="nav-link <?= $activePage === 'apikeys' ? 'active' : '' ?>">
                 <i class="bi bi-key-fill"></i> API Keys
             </a>
+            <a href="devices.php" class="nav-link <?= $activePage === 'devices' ? 'active' : '' ?>">
+                <i class="bi bi-phone-fill"></i> Devices
+            </a>
             <?php if (isAdmin()): ?>
             <a href="users.php" class="nav-link <?= $activePage === 'users' ? 'active' : '' ?>">
                 <i class="bi bi-people-fill"></i> Users

@@ -1,6 +1,6 @@
 {
-    "versionCode": 19,
-    "versionName": "2.1.0",
+    "versionCode": 20,
+    "versionName": "2.2.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.1.0: WhatsApp fallback - if one WhatsApp fails to open, automatically tries the other"
+    "changelog": "v2.2.0 Multi-Device Support:\n- Each phone gets a unique device ID\n- Devices auto-register on first poll\n- Messages distributed across active devices\n- Offline device messages reassigned automatically\n- Device name shown as manufacturer + model"
 }

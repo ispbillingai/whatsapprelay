@@ -103,6 +103,38 @@ function incrementUsage($userId) {
     )->execute([$userId]);
 }
 
+// Pick the next active device for round-robin assignment
+// Returns device_id or null if no active devices
+function assignDevice($userId) {
+    $db = getDB();
+    // Get active devices that were seen in the last 5 minutes
+    $stmt = $db->prepare(
+        'SELECT device_id FROM devices
+         WHERE user_id = ? AND is_active = 1 AND last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+         ORDER BY last_seen ASC'
+    );
+    $stmt->execute([$userId]);
+    $devices = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (empty($devices)) return null;
+    if (count($devices) === 1) return $devices[0];
+
+    // Round-robin: pick the device with the fewest recent pending/sent messages
+    $placeholders = implode(',', array_fill(0, count($devices), '?'));
+    $stmt = $db->prepare(
+        "SELECT d.device_id, COUNT(m.id) as msg_count
+         FROM devices d
+         LEFT JOIN messages m ON m.device_id = d.device_id AND m.status IN ('pending', 'sent') AND m.user_id = ?
+         WHERE d.device_id IN ($placeholders)
+         GROUP BY d.device_id
+         ORDER BY msg_count ASC, d.last_seen DESC
+         LIMIT 1"
+    );
+    $stmt->execute(array_merge([$userId], $devices));
+    $result = $stmt->fetch();
+    return $result ? $result['device_id'] : $devices[0];
+}
+
 // Log message action
 function logAction($messageId, $action, $details = null) {
     $db = getDB();
@@ -193,14 +225,16 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
     }
 
     $db = getDB();
+    $assignedDevice = assignDevice($auth['user_id']);
     $stmt = $db->prepare(
-        'INSERT INTO messages (user_id, api_key_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, 0)'
+        'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, 0)'
     );
-    $stmt->execute([$auth['user_id'], $auth['key_id'], $phone, $message, $whatsappType]);
+    $stmt->execute([$auth['user_id'], $auth['key_id'], $assignedDevice, $phone, $message, $whatsappType]);
     $messageId = $db->lastInsertId();
 
     incrementUsage($auth['user_id']);
-    logAction($messageId, 'created', "Queued via GET API for $whatsappType to $phone");
+    $deviceLabel = $assignedDevice ? substr($assignedDevice, 0, 8) : 'any';
+    logAction($messageId, 'created', "Queued via GET API for $whatsappType to $phone (device: $deviceLabel)");
 
     respond(201, [
         'success' => true,
@@ -255,14 +289,16 @@ if ($path === '/send' && $method === 'POST') {
     }
 
     $db = getDB();
+    $assignedDevice = assignDevice($authUserId);
     $stmt = $db->prepare(
-        'INSERT INTO messages (user_id, api_key_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$authUserId, $authKeyId, $phone, $message, $whatsappType, $priority]);
+    $stmt->execute([$authUserId, $authKeyId, $assignedDevice, $phone, $message, $whatsappType, $priority]);
     $messageId = $db->lastInsertId();
 
     incrementUsage($authUserId);
-    logAction($messageId, 'created', "Queued for $whatsappType to $phone");
+    $deviceLabel = $assignedDevice ? substr($assignedDevice, 0, 8) : 'any';
+    logAction($messageId, 'created', "Queued for $whatsappType to $phone (device: $deviceLabel)");
 
     respond(201, [
         'success' => true,
@@ -325,8 +361,23 @@ if ($path === '/send-bulk' && $method === 'POST') {
 // =============================================
 if ($path === '/pending' && $method === 'GET') {
     $limit = min(intval($_GET['limit'] ?? 10), 50);
+    $deviceId = $_GET['device_id'] ?? null;
+    $deviceName = $_GET['device_name'] ?? 'Unknown';
 
     $db = getDB();
+
+    // Auto-register/update device if device_id is provided
+    if ($deviceId) {
+        $devCheck = $db->prepare('SELECT id FROM devices WHERE device_id = ? AND user_id = ?');
+        $devCheck->execute([$deviceId, $authUserId]);
+        if ($devCheck->fetch()) {
+            $db->prepare('UPDATE devices SET last_seen = NOW(), device_name = ? WHERE device_id = ? AND user_id = ?')
+               ->execute([$deviceName, $deviceId, $authUserId]);
+        } else {
+            $db->prepare('INSERT INTO devices (user_id, device_id, device_name, last_seen) VALUES (?, ?, ?, NOW())')
+               ->execute([$authUserId, $deviceId, $deviceName]);
+        }
+    }
 
     // Auto-expire messages pending for more than 5 minutes to avoid pile-up
     $expired = $db->prepare(
@@ -339,24 +390,46 @@ if ($path === '/pending' && $method === 'GET') {
         error_log("Auto-expired $expiredCount messages for user $authUserId");
     }
 
-    // Fetch pending messages for this user
-    $stmt = $db->prepare(
-        'SELECT id, phone, message, whatsapp_type, priority, retry_count, created_at
-         FROM messages
-         WHERE status = "pending" AND retry_count < ? AND user_id = ?
-         ORDER BY priority DESC, created_at ASC
-         LIMIT ?'
-    );
-    $stmt->execute([MAX_RETRY_COUNT, $authUserId, $limit]);
+    // Reassign messages from offline devices (no poll in 2 minutes) back to pending pool
+    if ($deviceId) {
+        $db->prepare(
+            'UPDATE messages SET device_id = NULL
+             WHERE status = "pending" AND user_id = ? AND device_id IS NOT NULL
+             AND device_id IN (SELECT device_id FROM devices WHERE user_id = ? AND last_seen < DATE_SUB(NOW(), INTERVAL 2 MINUTE))'
+        )->execute([$authUserId, $authUserId]);
+    }
+
+    // Fetch pending messages: either assigned to this device or unassigned
+    if ($deviceId) {
+        $stmt = $db->prepare(
+            'SELECT id, phone, message, whatsapp_type, priority, retry_count, created_at
+             FROM messages
+             WHERE status = "pending" AND retry_count < ? AND user_id = ?
+             AND (device_id = ? OR device_id IS NULL)
+             ORDER BY priority DESC, created_at ASC
+             LIMIT ?'
+        );
+        $stmt->execute([MAX_RETRY_COUNT, $authUserId, $deviceId, $limit]);
+    } else {
+        $stmt = $db->prepare(
+            'SELECT id, phone, message, whatsapp_type, priority, retry_count, created_at
+             FROM messages
+             WHERE status = "pending" AND retry_count < ? AND user_id = ?
+             ORDER BY priority DESC, created_at ASC
+             LIMIT ?'
+        );
+        $stmt->execute([MAX_RETRY_COUNT, $authUserId, $limit]);
+    }
     $messages = $stmt->fetchAll();
 
-    // Mark as sent (processing)
+    // Mark as sent (processing) and assign to this device
     if (!empty($messages)) {
         $ids = array_column($messages, 'id');
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $db->prepare("UPDATE messages SET status = 'sent' WHERE id IN ($placeholders)")->execute($ids);
+        $db->prepare("UPDATE messages SET status = 'sent', device_id = ? WHERE id IN ($placeholders)")
+           ->execute(array_merge([$deviceId], $ids));
         foreach ($ids as $id) {
-            logAction($id, 'dispatched', 'Sent to APK for delivery');
+            logAction($id, 'dispatched', "Sent to device " . ($deviceId ? substr($deviceId, 0, 8) : 'unknown'));
         }
     }
 

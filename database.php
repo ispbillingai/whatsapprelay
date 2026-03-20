@@ -53,6 +53,20 @@ function runMigrations() {
             INDEX idx_user_id (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         "ALTER TABLE messages MODIFY COLUMN status ENUM('pending', 'sent', 'delivered', 'failed', 'expired') DEFAULT 'pending'",
+        "CREATE TABLE IF NOT EXISTS devices (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            device_id VARCHAR(64) NOT NULL UNIQUE,
+            device_name VARCHAR(100) DEFAULT 'Phone',
+            whatsapp_type ENUM('whatsapp', 'whatsapp_business', 'both') DEFAULT 'whatsapp',
+            is_active TINYINT(1) DEFAULT 1,
+            last_seen DATETIME NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_user_id (user_id),
+            INDEX idx_device_id (device_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS device_id VARCHAR(64) NULL AFTER api_key_id",
     ];
 
     foreach ($migrations as $sql) {
