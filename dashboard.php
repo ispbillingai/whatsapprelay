@@ -709,24 +709,25 @@ $usersList = $stmt->fetchAll();
     var total = <?= json_encode(array_map(fn($r) => (int)$r['total'], $chartData)) ?>;
 
     new Chart(document.getElementById('mainChart'), {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [
-                { label: 'Delivered', data: delivered, borderColor: '#25D366', backgroundColor: 'rgba(37,211,102,0.15)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#25D366', borderWidth: 2 },
-                { label: 'Failed', data: failed, borderColor: '#F44336', backgroundColor: 'rgba(244,67,54,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#F44336', borderWidth: 2 },
-                { label: 'Expired', data: expired, borderColor: '#9C27B0', backgroundColor: 'rgba(156,39,176,0.08)', fill: true, tension: 0.4, pointRadius: 2, pointBackgroundColor: '#9C27B0', borderWidth: 1.5 },
-                { label: 'Total', data: total, borderColor: '#90A4AE', borderDash: [4,4], fill: false, tension: 0.4, pointRadius: 0, borderWidth: 1 }
+                { label: 'Delivered', data: delivered, backgroundColor: '#25D366', borderRadius: 6, barPercentage: 0.7 },
+                { label: 'Failed', data: failed, backgroundColor: '#F44336', borderRadius: 6, barPercentage: 0.7 },
+                { label: 'Expired', data: expired, backgroundColor: '#9C27B0', borderRadius: 6, barPercentage: 0.7 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } } },
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } },
-                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 10 } } }
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 15, font: { size: 11 } } },
+                tooltip: { backgroundColor: '#333', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
             },
-            interaction: { intersect: false, mode: 'index' }
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 10 } } }
+            }
         }
     });
 
