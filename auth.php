@@ -4,6 +4,10 @@
  */
 require_once __DIR__ . '/database.php';
 
+// Keep sessions alive for 1 year (never auto-logout)
+ini_set('session.gc_maxlifetime', 31536000);
+ini_set('session.cookie_lifetime', 31536000);
+session_set_cookie_params(31536000);
 session_start();
 
 function isLoggedIn() {
