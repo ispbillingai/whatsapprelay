@@ -7,11 +7,80 @@ require_once __DIR__ . '/database.php';
 // Keep sessions alive for 1 year (never auto-logout)
 ini_set('session.gc_maxlifetime', 31536000);
 ini_set('session.cookie_lifetime', 31536000);
-session_set_cookie_params(31536000);
+session_set_cookie_params([
+    'lifetime' => 31536000,
+    'path' => '/',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 session_start();
+
+// Auto-restore session from remember-me cookie if session is dead
+if (!isset($_SESSION['user_id']) && !empty($_COOKIE['remember_token'])) {
+    _restoreFromRememberToken($_COOKIE['remember_token']);
+}
 
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
+}
+
+function _restoreFromRememberToken($token) {
+    $db = getDB();
+    $hash = hash('sha256', $token);
+    $stmt = $db->prepare('SELECT user_id FROM remember_tokens WHERE token_hash = ? AND expires_at > NOW()');
+    $stmt->execute([$hash]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        // Invalid or expired token - clear the cookie
+        setcookie('remember_token', '', ['expires' => 1, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+        return;
+    }
+
+    // Verify user is still active
+    $stmt = $db->prepare('SELECT * FROM users WHERE id = ? AND is_active = 1');
+    $stmt->execute([$row['user_id']]);
+    $user = $stmt->fetch();
+    if (!$user) {
+        setcookie('remember_token', '', ['expires' => 1, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+        return;
+    }
+
+    // Restore session
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_name'] = $user['name'];
+    $_SESSION['user_role'] = $user['role'];
+    $_SESSION['must_change_password'] = !empty($user['must_change_password']);
+
+    // Rotate token for security
+    $db->prepare('DELETE FROM remember_tokens WHERE token_hash = ?')->execute([$hash]);
+    _createRememberToken($user['id']);
+}
+
+function _createRememberToken($userId) {
+    $db = getDB();
+    $token = bin2hex(random_bytes(32));
+    $hash = hash('sha256', $token);
+    $expires = date('Y-m-d H:i:s', time() + 365 * 86400); // 1 year
+
+    // Clean old tokens for this user (keep max 5)
+    $db->prepare('DELETE FROM remember_tokens WHERE user_id = ? ORDER BY created_at ASC LIMIT 100')->execute([$userId]);
+    $db->prepare('INSERT INTO remember_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)')->execute([$userId, $hash, $expires]);
+
+    setcookie('remember_token', $token, [
+        'expires' => time() + 365 * 86400,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function _clearRememberToken() {
+    if (!empty($_COOKIE['remember_token'])) {
+        $db = getDB();
+        $hash = hash('sha256', $_COOKIE['remember_token']);
+        $db->prepare('DELETE FROM remember_tokens WHERE token_hash = ?')->execute([$hash]);
+    }
+    setcookie('remember_token', '', ['expires' => 1, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
 }
 
 function requireLogin() {
@@ -81,12 +150,17 @@ function login($email, $password) {
 
         // Update last login
         $db->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
+
+        // Create persistent remember-me cookie
+        _createRememberToken($user['id']);
+
         return true;
     }
     return false;
 }
 
 function logout() {
+    _clearRememberToken();
     session_destroy();
     header('Location: login.php');
     exit;
