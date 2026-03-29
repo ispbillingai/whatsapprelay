@@ -112,7 +112,7 @@ function incrementUsage($userId) {
  * Example with: Device A (Both), Device B (Business)
  * Rotation: A-WA → A-Biz → B-Biz → A-WA → A-Biz → B-Biz ...
  *
- * Returns ['device_id' => string, 'whatsapp_type' => string] or null
+ * Returns ['device_id' => string, 'wa_type' => string] or null
  */
 function assignDevice($userId, $waType = null) {
     $db = getDB();
@@ -140,8 +140,8 @@ function assignDevice($userId, $waType = null) {
         }
     }
 
-    if (empty($slots)) return $allDevices[0]['device_id'];
-    if (count($slots) === 1) return $slots[0]['device_id'];
+    if (empty($slots)) return ['device_id' => $allDevices[0]['device_id'], 'wa_type' => 'whatsapp'];
+    if (count($slots) === 1) return $slots[0];
 
     // Find last sent message's device+type to determine next slot
     $lastStmt = $db->prepare(
@@ -160,65 +160,10 @@ function assignDevice($userId, $waType = null) {
             }
         }
         $nextIdx = ($matchIdx + 1) % count($slots);
-        return $slots[$nextIdx]['device_id'];
+        return $slots[$nextIdx];
     }
 
-    return $slots[0]['device_id'];
-}
-
-/**
- * Get the WhatsApp type that should be used for the assigned device.
- * Uses the same rotation logic as assignDevice.
- */
-function getDeviceWaType($userId, $assignedDevice) {
-    $db = getDB();
-
-    // Get device setting
-    $stmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
-    $stmt->execute([$assignedDevice]);
-    $devType = $stmt->fetchColumn() ?: 'both';
-
-    if ($devType !== 'both') {
-        return ($devType === 'whatsapp_business') ? 'whatsapp_business' : 'whatsapp';
-    }
-
-    // Device is "both" - check rotation to pick the right type
-    $slots = [];
-    $devStmt = $db->prepare(
-        'SELECT device_id, whatsapp_type FROM devices
-         WHERE user_id = ? AND is_active = 1 AND last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-         ORDER BY device_name ASC'
-    );
-    $devStmt->execute([$userId]);
-    foreach ($devStmt->fetchAll() as $dev) {
-        $dt = $dev['whatsapp_type'] ?? 'both';
-        if ($dt === 'both') {
-            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp'];
-            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => 'whatsapp_business'];
-        } else {
-            $slots[] = ['device_id' => $dev['device_id'], 'wa_type' => $dt];
-        }
-    }
-
-    $lastStmt = $db->prepare(
-        'SELECT device_id, whatsapp_type FROM messages WHERE user_id = ? AND device_id IS NOT NULL ORDER BY id DESC LIMIT 1'
-    );
-    $lastStmt->execute([$userId]);
-    $last = $lastStmt->fetch();
-
-    if ($last) {
-        $matchIdx = -1;
-        foreach ($slots as $i => $slot) {
-            if ($slot['device_id'] === $last['device_id'] && $slot['wa_type'] === $last['whatsapp_type']) {
-                $matchIdx = $i;
-                break;
-            }
-        }
-        $nextIdx = ($matchIdx + 1) % count($slots);
-        return $slots[$nextIdx]['wa_type'];
-    }
-
-    return 'whatsapp';
+    return $slots[0];
 }
 
 // Log message action
@@ -312,20 +257,20 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
 
     $db = getDB();
     $assignedDevice = null;
-    try { $assignedDevice = assignDevice($auth['user_id'], $whatsappType); } catch (Exception $e) {}
-
-    // Override whatsapp_type to match device rotation
-    if ($assignedDevice) {
-        try {
-            $whatsappType = getDeviceWaType($auth['user_id'], $assignedDevice);
-        } catch (Exception $e) {}
-    }
+    $assignedDeviceId = null;
+    try {
+        $assigned = assignDevice($auth['user_id'], $whatsappType);
+        if ($assigned) {
+            $assignedDeviceId = $assigned['device_id'];
+            $whatsappType = $assigned['wa_type'];
+        }
+    } catch (Exception $e) {}
 
     try {
         $stmt = $db->prepare(
             'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, 0)'
         );
-        $stmt->execute([$auth['user_id'], $auth['key_id'], $assignedDevice, $phone, $message, $whatsappType]);
+        $stmt->execute([$auth['user_id'], $auth['key_id'], $assignedDeviceId, $phone, $message, $whatsappType]);
     } catch (Exception $e) {
         // Fallback: insert without device_id if column doesn't exist
         $stmt = $db->prepare(
@@ -336,7 +281,7 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
     $messageId = $db->lastInsertId();
 
     incrementUsage($auth['user_id']);
-    $deviceLabel = $assignedDevice ? substr($assignedDevice, 0, 8) : 'any';
+    $deviceLabel = $assignedDeviceId ? substr($assignedDeviceId, 0, 8) : 'any';
     logAction($messageId, 'created', "Queued via GET API for $whatsappType to $phone (device: $deviceLabel)");
 
     respond(201, [
@@ -392,21 +337,20 @@ if ($path === '/send' && $method === 'POST') {
     }
 
     $db = getDB();
-    $assignedDevice = null;
-    try { $assignedDevice = assignDevice($authUserId, $whatsappType); } catch (Exception $e) {}
-
-    // Override whatsapp_type to match device rotation
-    if ($assignedDevice) {
-        try {
-            $whatsappType = getDeviceWaType($authUserId, $assignedDevice);
-        } catch (Exception $e) {}
-    }
+    $assignedDeviceId = null;
+    try {
+        $assigned = assignDevice($authUserId, $whatsappType);
+        if ($assigned) {
+            $assignedDeviceId = $assigned['device_id'];
+            $whatsappType = $assigned['wa_type'];
+        }
+    } catch (Exception $e) {}
 
     try {
         $stmt = $db->prepare(
             'INSERT INTO messages (user_id, api_key_id, device_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$authUserId, $authKeyId, $assignedDevice, $phone, $message, $whatsappType, $priority]);
+        $stmt->execute([$authUserId, $authKeyId, $assignedDeviceId, $phone, $message, $whatsappType, $priority]);
     } catch (Exception $e) {
         $stmt = $db->prepare(
             'INSERT INTO messages (user_id, api_key_id, phone, message, whatsapp_type, priority) VALUES (?, ?, ?, ?, ?, ?)'
@@ -416,7 +360,7 @@ if ($path === '/send' && $method === 'POST') {
     $messageId = $db->lastInsertId();
 
     incrementUsage($authUserId);
-    $deviceLabel = $assignedDevice ? substr($assignedDevice, 0, 8) : 'any';
+    $deviceLabel = $assignedDeviceId ? substr($assignedDeviceId, 0, 8) : 'any';
     logAction($messageId, 'created', "Queued for $whatsappType to $phone (device: $deviceLabel)");
 
     respond(201, [
@@ -625,10 +569,16 @@ if ($path === '/status' && $method === 'POST') {
             $newDeviceId = $otherDevice->fetchColumn();
 
             if ($newDeviceId) {
-                // Retry once on another device
-                $db->prepare('UPDATE messages SET status = "pending", device_id = ?, retry_count = 1, error_message = NULL WHERE id = ?')
-                   ->execute([$newDeviceId, $messageId]);
-                logAction($messageId, 'auto-retry', "Failed on device " . substr($failedDeviceId ?? '', 0, 8) . ", retrying on " . substr($newDeviceId, 0, 8));
+                // Get the new device's whatsapp_type so we don't send biz to a personal-only device
+                $newDevTypeStmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ?');
+                $newDevTypeStmt->execute([$newDeviceId]);
+                $newDevType = $newDevTypeStmt->fetchColumn() ?: 'whatsapp';
+                if ($newDevType === 'both') $newDevType = 'whatsapp'; // default to personal for retry
+
+                // Retry once on another device with correct type
+                $db->prepare('UPDATE messages SET status = "pending", device_id = ?, whatsapp_type = ?, retry_count = 1, error_message = NULL WHERE id = ?')
+                   ->execute([$newDeviceId, $newDevType, $messageId]);
+                logAction($messageId, 'auto-retry', "Failed on device " . substr($failedDeviceId ?? '', 0, 8) . ", retrying on " . substr($newDeviceId, 0, 8) . " as $newDevType");
             } else {
                 // No other device available — mark as failed
                 $db->prepare('UPDATE messages SET status = "failed", error_message = ?, retry_count = 1 WHERE id = ?')
