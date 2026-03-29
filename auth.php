@@ -50,10 +50,6 @@ function _restoreFromRememberToken($token) {
     $_SESSION['user_name'] = $user['name'];
     $_SESSION['user_role'] = $user['role'];
     $_SESSION['must_change_password'] = !empty($user['must_change_password']);
-
-    // Rotate token for security
-    $db->prepare('DELETE FROM remember_tokens WHERE token_hash = ?')->execute([$hash]);
-    _createRememberToken($user['id']);
 }
 
 function _createRememberToken($userId) {
@@ -62,8 +58,8 @@ function _createRememberToken($userId) {
     $hash = hash('sha256', $token);
     $expires = date('Y-m-d H:i:s', time() + 365 * 86400); // 1 year
 
-    // Clean old tokens for this user (keep max 5)
-    $db->prepare('DELETE FROM remember_tokens WHERE user_id = ? ORDER BY created_at ASC LIMIT 100')->execute([$userId]);
+    // Clean expired tokens for this user
+    $db->prepare('DELETE FROM remember_tokens WHERE user_id = ? AND expires_at <= NOW()')->execute([$userId]);
     $db->prepare('INSERT INTO remember_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)')->execute([$userId, $hash, $expires]);
 
     setcookie('remember_token', $token, [
