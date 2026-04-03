@@ -1,6 +1,6 @@
 {
-    "versionCode": 26,
-    "versionName": "2.4.1",
+    "versionCode": 27,
+    "versionName": "2.4.2",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.4.1: Send button debug logs now visible in View Logs screen"
+    "changelog": "v2.4.2: Fix send button detection for newer WhatsApp, no wrong-app fallback, kick-start search safety net"
 }
