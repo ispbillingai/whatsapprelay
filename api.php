@@ -478,8 +478,29 @@ if ($path === '/pending' && $method === 'GET') {
         }
     }
 
-    // Fetch pending messages: either assigned to this device or unassigned
+    // Get this device's whatsapp_type so we only fetch compatible messages
+    $deviceWaType = null;
     if ($deviceId) {
+        $dtStmt = $db->prepare('SELECT whatsapp_type FROM devices WHERE device_id = ? AND user_id = ?');
+        $dtStmt->execute([$deviceId, $authUserId]);
+        $deviceWaType = $dtStmt->fetchColumn() ?: 'whatsapp';
+    }
+
+    // Build whatsapp_type filter: only fetch messages this device can handle
+    if ($deviceId && $deviceWaType && $deviceWaType !== 'both') {
+        // Device only supports one type — only fetch matching messages
+        $stmt = $db->prepare(
+            'SELECT id, phone, message, whatsapp_type, priority, retry_count, created_at
+             FROM messages
+             WHERE status = "pending" AND retry_count < ? AND user_id = ?
+             AND (device_id = ? OR device_id IS NULL)
+             AND whatsapp_type = ?
+             ORDER BY priority DESC, created_at ASC
+             LIMIT ?'
+        );
+        $stmt->execute([MAX_RETRY_COUNT, $authUserId, $deviceId, $deviceWaType, $limit]);
+    } elseif ($deviceId) {
+        // Device supports "both" — fetch any type
         $stmt = $db->prepare(
             'SELECT id, phone, message, whatsapp_type, priority, retry_count, created_at
              FROM messages
@@ -508,7 +529,7 @@ if ($path === '/pending' && $method === 'GET') {
         $db->prepare("UPDATE messages SET status = 'sent', device_id = ? WHERE id IN ($placeholders)")
            ->execute(array_merge([$deviceId], $ids));
         foreach ($ids as $id) {
-            logAction($id, 'dispatched', "Sent to device " . ($deviceId ? substr($deviceId, 0, 8) : 'unknown'));
+            logAction($id, 'dispatched', "Sent to device " . ($deviceId ? substr($deviceId, 0, 8) : 'unknown') . " ($deviceWaType)");
         }
     }
 
