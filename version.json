@@ -1,6 +1,6 @@
 {
-    "versionCode": 24,
-    "versionName": "2.3.2",
+    "versionCode": 25,
+    "versionName": "2.4.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.3.2: Updated accessibility instructions - navigate manually to Settings > Apps > FreeISP WA"
+    "changelog": "v2.4.0: Improved send button detection with extra logging and fallback strategies"
 }
