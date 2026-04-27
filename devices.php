@@ -56,34 +56,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
 $view = $_GET['view'] ?? 'mine';
 $showAll = $isAdminUser && $view === 'all';
 
-// Fetch devices
+// Fetch devices (basic info only — we aggregate stats separately for performance)
 try {
     if ($showAll) {
         $stmt = $db->query(
-            'SELECT d.*, u.name as user_name, u.email,
-                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
-                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
-                (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
-                (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
+            'SELECT d.*, u.name as user_name, u.email
              FROM devices d
              LEFT JOIN users u ON d.user_id = u.id
              ORDER BY d.last_seen DESC'
         );
     } else {
         $stmt = $db->prepare(
-            'SELECT d.*,
-                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
-                (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status IN ("pending", "sent")) as pending_msgs,
-                (SELECT MAX(sent_at) FROM messages WHERE device_id = d.device_id AND status = "delivered") as last_delivered_at,
-                (SELECT status FROM messages WHERE device_id = d.device_id ORDER BY id DESC LIMIT 1) as last_msg_status
-             FROM devices d
-             WHERE d.user_id = ?
-             ORDER BY d.last_seen DESC'
+            'SELECT d.* FROM devices d WHERE d.user_id = ? ORDER BY d.last_seen DESC'
         );
         $stmt->execute([$userId]);
     }
     $devices = $stmt->fetchAll();
+
+    // Aggregate message stats for all devices in ONE query (was 4 correlated subqueries per device)
+    if (!empty($devices)) {
+        $deviceIds = array_column($devices, 'device_id');
+        $deviceIds = array_filter($deviceIds, fn($id) => !empty($id));
+
+        $statsByDevice = [];
+        if (!empty($deviceIds)) {
+            $placeholders = implode(',', array_fill(0, count($deviceIds), '?'));
+            $statsStmt = $db->prepare(
+                "SELECT device_id,
+                    SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+                    SUM(CASE WHEN status IN ('pending', 'sent') THEN 1 ELSE 0 END) as pending_msgs,
+                    MAX(CASE WHEN status = 'delivered' THEN sent_at END) as last_delivered_at
+                 FROM messages
+                 WHERE device_id IN ($placeholders)
+                 GROUP BY device_id"
+            );
+            $statsStmt->execute(array_values($deviceIds));
+            foreach ($statsStmt->fetchAll() as $row) {
+                $statsByDevice[$row['device_id']] = $row;
+            }
+
+            // Last message status per device — separate query, indexed lookup
+            $lastStmt = $db->prepare(
+                "SELECT m.device_id, m.status
+                 FROM messages m
+                 INNER JOIN (
+                     SELECT device_id, MAX(id) as max_id
+                     FROM messages WHERE device_id IN ($placeholders)
+                     GROUP BY device_id
+                 ) latest ON m.device_id = latest.device_id AND m.id = latest.max_id"
+            );
+            $lastStmt->execute(array_values($deviceIds));
+            foreach ($lastStmt->fetchAll() as $row) {
+                if (isset($statsByDevice[$row['device_id']])) {
+                    $statsByDevice[$row['device_id']]['last_msg_status'] = $row['status'];
+                } else {
+                    $statsByDevice[$row['device_id']] = ['last_msg_status' => $row['status']];
+                }
+            }
+        }
+
+        // Merge stats into devices array
+        foreach ($devices as &$dev) {
+            $stats = $statsByDevice[$dev['device_id']] ?? [];
+            $dev['delivered'] = (int)($stats['delivered'] ?? 0);
+            $dev['pending_msgs'] = (int)($stats['pending_msgs'] ?? 0);
+            $dev['last_delivered_at'] = $stats['last_delivered_at'] ?? null;
+            $dev['last_msg_status'] = $stats['last_msg_status'] ?? '';
+        }
+        unset($dev);
+    }
 } catch (Exception $e) {
+    error_log("devices.php fetch error: " . $e->getMessage());
     $devices = [];
 }
 
