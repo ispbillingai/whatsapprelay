@@ -1,6 +1,6 @@
 {
-    "versionCode": 28,
-    "versionName": "2.4.3",
+    "versionCode": 29,
+    "versionName": "2.4.4",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.4.3: Detect frozen accessibility service (Android battery management) and alert user instead of silently failing"
+    "changelog": "v2.4.4: Frozen notification only on real failure, silent (no vibration/sound)"
 }
