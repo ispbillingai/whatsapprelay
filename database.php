@@ -143,6 +143,43 @@ function runMigrations() {
     foreach ($modifies as $sql) {
         try { $db->exec($sql); } catch (PDOException $e) { /* ignore */ }
     }
+
+    // INDEX migrations — speed up dashboard queries
+    // MySQL doesn't support CREATE INDEX IF NOT EXISTS, so check first
+    $indexExists = function($db, $table, $indexName) {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?");
+        $stmt->execute([$table, $indexName]);
+        return $stmt->fetchColumn() > 0;
+    };
+
+    $indexes = [
+        // [table, index_name, CREATE statement]
+        // For: SELECT * FROM messages WHERE user_id = ? ORDER BY created_at DESC LIMIT 50
+        ['messages', 'idx_user_created', "CREATE INDEX idx_user_created ON messages (user_id, created_at)"],
+        // For: SELECT COUNT(*) FROM messages WHERE device_id = ? AND status = ? (devices.php runs this 3x per device)
+        ['messages', 'idx_device_status', "CREATE INDEX idx_device_status ON messages (device_id, status)"],
+        // For: chart queries WHERE created_at >= ? AND user_id = ? GROUP BY status
+        ['messages', 'idx_user_status_created', "CREATE INDEX idx_user_status_created ON messages (user_id, status, created_at)"],
+        // For: SELECT * FROM messages WHERE device_id = ? ORDER BY id DESC LIMIT 1 (last_msg_status)
+        ['messages', 'idx_device_id_only', "CREATE INDEX idx_device_id_only ON messages (device_id, id)"],
+        // For: api_keys lookups WHERE user_id = ? AND is_active = 1
+        ['api_keys', 'idx_user_active', "CREATE INDEX idx_user_active ON api_keys (user_id, is_active)"],
+        // For: SELECT MAX(sent_at) FROM messages WHERE device_id = ? AND status = "delivered"
+        ['messages', 'idx_device_status_sent', "CREATE INDEX idx_device_status_sent ON messages (device_id, status, sent_at)"],
+        // For: devices listing ORDER BY last_seen DESC and active filter
+        ['devices', 'idx_user_lastseen', "CREATE INDEX idx_user_lastseen ON devices (user_id, last_seen)"],
+        ['devices', 'idx_active_lastseen', "CREATE INDEX idx_active_lastseen ON devices (is_active, last_seen)"],
+    ];
+
+    foreach ($indexes as [$table, $idxName, $sql]) {
+        try {
+            if (!$indexExists($db, $table, $idxName)) {
+                $db->exec($sql);
+            }
+        } catch (PDOException $e) {
+            // Ignore — index may exist or table missing
+        }
+    }
 }
 
 // Auto-run migrations
