@@ -224,8 +224,46 @@ if ($method === 'GET' && ($path === '/send' || isset($_GET['to']))) {
         respond(400, ['error' => 'to and msg parameters are required', 'usage' => 'api.php?to=NUMBER&msg=TEXT&apikey=YOURKEY']);
     }
 
+    // === Spam guard: reject obvious junk before authenticating or recording ===
+    $phoneDigits = preg_replace('/[^0-9]/', '', $phone);
+    $msgTrim = trim($message);
+
+    // Reject empty / placeholder / template tokens — these come from billing systems
+    // that didn't substitute their variables (e.g. "[number]", "[text]", "{{phone}}")
+    $isPlaceholder = function($v) {
+        if ($v === '') return true;
+        if (preg_match('/^\s*[\[\{<\(]+[a-z_\s]+[\]\}>\)]+\s*$/i', $v)) return true;
+        return false;
+    };
+
+    if ($phoneDigits === '' || $isPlaceholder($phone) || strlen($phoneDigits) < 7) {
+        respond(400, ['error' => 'Invalid phone number — placeholder or too short']);
+    }
+    if ($isPlaceholder($message) || strlen($msgTrim) < 1) {
+        respond(400, ['error' => 'Invalid message — placeholder or empty']);
+    }
+
     $auth = authenticate();
-    $phone = preg_replace('/[^0-9]/', '', $phone);
+    $phone = $phoneDigits;
+
+    // === Rate limit: max 30 sends per minute per API key ===
+    $db = getDB();
+    $rateStmt = $db->prepare(
+        'SELECT COUNT(*) FROM messages WHERE api_key_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)'
+    );
+    $rateStmt->execute([$auth['key_id']]);
+    if ($rateStmt->fetchColumn() >= 30) {
+        respond(429, ['error' => 'Rate limit exceeded — max 30 messages per minute per API key']);
+    }
+
+    // === Duplicate guard: reject same phone+message within last 30 seconds ===
+    $dupStmt = $db->prepare(
+        'SELECT id FROM messages WHERE user_id = ? AND phone = ? AND message = ? AND created_at > DATE_SUB(NOW(), INTERVAL 30 SECOND) LIMIT 1'
+    );
+    $dupStmt->execute([$auth['user_id'], $phone, $message]);
+    if ($dupStmt->fetchColumn()) {
+        respond(429, ['error' => 'Duplicate message — same phone+text sent within the last 30 seconds']);
+    }
 
     // Use the type param if given, otherwise fall back to the user's default preference
     $whatsappType = $_GET['type'] ?? null;
@@ -315,7 +353,40 @@ if ($path === '/send' && $method === 'POST') {
         respond(400, ['error' => 'phone and message are required']);
     }
 
-    $phone = preg_replace('/[^0-9]/', '', $phone);
+    // === Spam guard ===
+    $phoneDigits = preg_replace('/[^0-9]/', '', $phone);
+    $msgTrim = trim($message);
+    $isPlaceholder = function($v) {
+        if ($v === '') return true;
+        if (preg_match('/^\s*[\[\{<\(]+[a-z_\s]+[\]\}>\)]+\s*$/i', $v)) return true;
+        return false;
+    };
+    if ($phoneDigits === '' || $isPlaceholder($phone) || strlen($phoneDigits) < 7) {
+        respond(400, ['error' => 'Invalid phone number — placeholder or too short']);
+    }
+    if ($isPlaceholder($message) || strlen($msgTrim) < 1) {
+        respond(400, ['error' => 'Invalid message — placeholder or empty']);
+    }
+    $phone = $phoneDigits;
+
+    // === Rate limit: 30/min per API key ===
+    $rateDb = getDB();
+    $rateStmt = $rateDb->prepare(
+        'SELECT COUNT(*) FROM messages WHERE api_key_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)'
+    );
+    $rateStmt->execute([$authKeyId]);
+    if ($rateStmt->fetchColumn() >= 30) {
+        respond(429, ['error' => 'Rate limit exceeded — max 30 messages per minute per API key']);
+    }
+
+    // === Duplicate guard: same phone+message within 30s ===
+    $dupStmt = $rateDb->prepare(
+        'SELECT id FROM messages WHERE user_id = ? AND phone = ? AND message = ? AND created_at > DATE_SUB(NOW(), INTERVAL 30 SECOND) LIMIT 1'
+    );
+    $dupStmt->execute([$authUserId, $phone, $message]);
+    if ($dupStmt->fetchColumn()) {
+        respond(429, ['error' => 'Duplicate message — same phone+text sent within the last 30 seconds']);
+    }
 
     // Load balance: alternate between whatsapp and whatsapp_business
     if ($whatsappType === 'load_balance') {
