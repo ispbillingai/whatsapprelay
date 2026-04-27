@@ -47,13 +47,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCsrf($_POST['csrf'] ?? '')) {
         flash('Device removed');
     }
 
-    header('Location: devices.php');
+    $redirView = ($_POST['view'] ?? '') === 'all' ? '?view=all' : '';
+    header('Location: devices.php' . $redirView);
     exit;
 }
 
+// Admin view toggle: 'mine' (default) or 'all'
+$view = $_GET['view'] ?? 'mine';
+$showAll = $isAdminUser && $view === 'all';
+
 // Fetch devices
 try {
-    if ($isAdminUser) {
+    if ($showAll) {
         $stmt = $db->query(
             'SELECT d.*, u.name as user_name, u.email,
                 (SELECT COUNT(*) FROM messages WHERE device_id = d.device_id AND status = "delivered") as delivered,
@@ -153,9 +158,21 @@ renderHeader('Devices', 'devices');
 
 <!-- Devices Table -->
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center py-3">
+    <div class="card-header d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <span><i class="bi bi-phone-fill"></i> Registered Devices</span>
-        <span class="badge bg-secondary"><?= count($devices) ?> device(s)</span>
+        <div class="d-flex align-items-center gap-2">
+            <?php if ($isAdminUser): ?>
+            <div class="btn-group btn-group-sm" role="group" aria-label="View toggle">
+                <a href="devices.php?view=mine" class="btn <?= !$showAll ? 'btn-success' : 'btn-outline-secondary' ?>">
+                    <i class="bi bi-person"></i> My Devices
+                </a>
+                <a href="devices.php?view=all" class="btn <?= $showAll ? 'btn-success' : 'btn-outline-secondary' ?>">
+                    <i class="bi bi-people"></i> All Users
+                </a>
+            </div>
+            <?php endif; ?>
+            <span class="badge bg-secondary"><?= count($devices) ?> device(s)</span>
+        </div>
     </div>
     <div class="card-body p-0">
         <?php if (empty($devices)): ?>
@@ -173,7 +190,7 @@ renderHeader('Devices', 'devices');
                         <th>Device</th>
                         <th>Device ID</th>
                         <th>WhatsApp</th>
-                        <?php if ($isAdminUser): ?><th>User</th><?php endif; ?>
+                        <?php if ($showAll): ?><th>User</th><?php endif; ?>
                         <th>Delivered</th>
                         <th>Pending</th>
                         <th>Last Seen</th>
@@ -217,6 +234,7 @@ renderHeader('Devices', 'devices');
                         <td>
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                                <input type="hidden" name="view" value="<?= $showAll ? 'all' : 'mine' ?>">
                                 <input type="hidden" name="action" value="set_wa_type">
                                 <input type="hidden" name="device_id" value="<?= htmlspecialchars($dev['device_id']) ?>">
                                 <select name="wa_type" class="form-select form-select-sm" style="width:130px;" onchange="this.form.submit()">
@@ -226,7 +244,7 @@ renderHeader('Devices', 'devices');
                                 </select>
                             </form>
                         </td>
-                        <?php if ($isAdminUser): ?>
+                        <?php if ($showAll): ?>
                         <td class="small"><?= htmlspecialchars($dev['user_name'] ?? 'N/A') ?></td>
                         <?php endif; ?>
                         <td class="text-success"><?= number_format($dev['delivered']) ?></td>
@@ -239,6 +257,7 @@ renderHeader('Devices', 'devices');
                                 <!-- Rename -->
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                                    <input type="hidden" name="view" value="<?= $showAll ? 'all' : 'mine' ?>">
                                     <input type="hidden" name="action" value="rename">
                                     <input type="hidden" name="device_id" value="<?= htmlspecialchars($dev['device_id']) ?>">
                                     <input type="text" name="new_name" placeholder="New name" class="form-control form-control-sm d-inline-block" style="width:110px;" value="<?= htmlspecialchars($dev['device_name']) ?>">
@@ -248,6 +267,7 @@ renderHeader('Devices', 'devices');
                                 <!-- Toggle -->
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                                    <input type="hidden" name="view" value="<?= $showAll ? 'all' : 'mine' ?>">
                                     <input type="hidden" name="action" value="toggle">
                                     <input type="hidden" name="device_id" value="<?= htmlspecialchars($dev['device_id']) ?>">
                                     <button type="submit" class="btn btn-sm <?= $dev['is_active'] ? 'btn-outline-warning' : 'btn-outline-success' ?>" title="<?= $dev['is_active'] ? 'Disable' : 'Enable' ?>">
@@ -258,6 +278,7 @@ renderHeader('Devices', 'devices');
                                 <!-- Delete -->
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Remove this device?')">
                                     <input type="hidden" name="csrf" value="<?= csrfToken() ?>">
+                                    <input type="hidden" name="view" value="<?= $showAll ? 'all' : 'mine' ?>">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="device_id" value="<?= htmlspecialchars($dev['device_id']) ?>">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-trash"></i></button>
