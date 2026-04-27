@@ -22,6 +22,23 @@ $memPercent = $memTotal > 0 ? round(($memUsed / $memTotal) * 100, 1) : 0;
 $cpuInfo = @file_get_contents('/proc/cpuinfo');
 $cpuCores = $cpuInfo ? preg_match_all('/^processor/m', $cpuInfo) : 1;
 
+// Real CPU usage % — sample /proc/stat twice with a 200ms delta.
+// sys_getloadavg() returns load average, not CPU%, so we compute it ourselves.
+function readCpuStat() {
+    $stat = @file_get_contents('/proc/stat');
+    if (!$stat || !preg_match('/^cpu\s+(.+)$/m', $stat, $m)) return null;
+    $v = array_map('intval', preg_split('/\s+/', trim($m[1])));
+    return ['idle' => ($v[3] ?? 0) + ($v[4] ?? 0), 'total' => array_sum($v)];
+}
+$_a = readCpuStat();
+usleep(200000);
+$_b = readCpuStat();
+$cpuPercent = 0;
+if ($_a && $_b) {
+    $dt = $_b['total'] - $_a['total'];
+    if ($dt > 0) $cpuPercent = round(100 * (1 - ($_b['idle'] - $_a['idle']) / $dt), 1);
+}
+
 // Disk
 $diskTotal = @disk_total_space('/') ?: 0;
 $diskFree = @disk_free_space('/') ?: 0;
@@ -172,7 +189,7 @@ new Chart(document.getElementById('cpuRamChart'), {
     data: {
         labels: displayLabels,
         datasets: [
-            { label: 'CPU Load', data: mCpu, borderColor: '#FF9800', backgroundColor: 'rgba(255,152,0,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'CPU %', data: mCpu, borderColor: '#FF9800', backgroundColor: 'rgba(255,152,0,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
             { label: 'RAM %', data: mRam, borderColor: '#2196F3', backgroundColor: 'rgba(33,150,243,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
             { label: 'MySQL Conn', data: mConn, borderColor: '#9C27B0', fill: false, tension: 0.3, pointRadius: 0, borderDash: [3,3] }
         ]
@@ -245,10 +262,13 @@ new Chart(document.getElementById('activityChart'), {
     <div class="col-md-3">
         <div class="card">
             <div class="card-body text-center py-3">
-                <?php $loadColor = $loadAvg[0] > $cpuCores ? 'danger' : ($loadAvg[0] > $cpuCores * 0.7 ? 'warning' : 'success'); ?>
-                <h3 class="mb-0 text-<?= $loadColor ?>"><?= number_format($loadAvg[0], 2) ?></h3>
-                <small class="text-muted">CPU Load (1 min)</small>
-                <div class="small text-muted mt-1"><?= $cpuCores ?> core(s)</div>
+                <?php
+                    $cpuColor = $cpuPercent > 90 ? 'danger' : ($cpuPercent > 70 ? 'warning' : 'success');
+                    $loadColor = $loadAvg[0] > $cpuCores ? 'danger' : ($loadAvg[0] > $cpuCores * 0.7 ? 'warning' : 'success');
+                ?>
+                <h3 class="mb-0 text-<?= $cpuColor ?>"><?= $cpuPercent ?>%</h3>
+                <small class="text-muted">CPU Usage</small>
+                <div class="small text-muted mt-1"><?= $cpuCores ?> core(s) &middot; load <?= number_format($loadAvg[0], 2) ?></div>
             </div>
         </div>
     </div>
@@ -288,11 +308,11 @@ new Chart(document.getElementById('activityChart'), {
     <div class="card-body">
         <div class="mb-3">
             <div class="d-flex justify-content-between small mb-1">
-                <span>CPU Load</span>
-                <span><?= number_format($loadAvg[0], 2) ?> / <?= $cpuCores ?> cores (5m: <?= number_format($loadAvg[1], 2) ?>, 15m: <?= number_format($loadAvg[2], 2) ?>)</span>
+                <span>CPU Usage</span>
+                <span><?= $cpuPercent ?>% &middot; load avg <?= number_format($loadAvg[0], 2) ?> / <?= number_format($loadAvg[1], 2) ?> / <?= number_format($loadAvg[2], 2) ?> (1m/5m/15m, <?= $cpuCores ?> cores)</span>
             </div>
             <div class="progress" style="height:8px;">
-                <div class="progress-bar bg-<?= $loadColor ?>" style="width:<?= min(100, ($loadAvg[0] / max(1, $cpuCores)) * 100) ?>%"></div>
+                <div class="progress-bar bg-<?= $cpuColor ?>" style="width:<?= $cpuPercent ?>%"></div>
             </div>
         </div>
         <div class="mb-3">

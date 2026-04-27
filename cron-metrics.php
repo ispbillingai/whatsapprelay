@@ -23,13 +23,31 @@ for ($i = 0; $i < 6; $i++) {
     }
 }
 
+function readCpuStat() {
+    $stat = @file_get_contents('/proc/stat');
+    if (!$stat || !preg_match('/^cpu\s+(.+)$/m', $stat, $m)) return null;
+    $v = array_map('intval', preg_split('/\s+/', trim($m[1])));
+    return ['idle' => ($v[3] ?? 0) + ($v[4] ?? 0), 'total' => array_sum($v)];
+}
+
+function getCpuPercent($sampleMs = 500) {
+    $a = readCpuStat();
+    if ($a === null) return 0;
+    usleep($sampleMs * 1000);
+    $b = readCpuStat();
+    if ($b === null) return 0;
+    $dt = $b['total'] - $a['total'];
+    if ($dt <= 0) return 0;
+    return round(100 * (1 - ($b['idle'] - $a['idle']) / $dt), 2);
+}
+
 function collectMetrics() {
     try {
         $db = getDB();
 
-        // CPU load
-        $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0, 0, 0];
-        $cpuLoad = round($load[0], 2);
+        // Real CPU usage % from /proc/stat (idle vs total ticks delta).
+        // Replaces sys_getloadavg() — load average ≠ CPU%.
+        $cpuLoad = getCpuPercent();
 
         // RAM
         $memTotal = 0;
