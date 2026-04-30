@@ -1,6 +1,6 @@
 {
-    "versionCode": 32,
-    "versionName": "2.4.7",
+    "versionCode": 33,
+    "versionName": "2.4.8",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.4.7: Fix app getting stuck after a day — bounded thread pool prevents pile-up, fetch dedup, lock refresh, 12h self-restart"
+    "changelog": "v2.4.8: Fix long-uptime stuck service by removing unsafe self-restart, refreshing polling alarms safely, and capping indexed local logs"
 }
