@@ -1,6 +1,6 @@
 {
-    "versionCode": 31,
-    "versionName": "2.4.6",
+    "versionCode": 32,
+    "versionName": "2.4.7",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.4.6: Keep-alive ping for accessibility service to prevent Android freezing it"
+    "changelog": "v2.4.7: Fix app getting stuck after a day — bounded thread pool prevents pile-up, fetch dedup, lock refresh, 12h self-restart"
 }
