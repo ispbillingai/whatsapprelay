@@ -1,6 +1,6 @@
 {
-    "versionCode": 33,
-    "versionName": "2.4.8",
+    "versionCode": 34,
+    "versionName": "2.4.9",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.4.8: Fix long-uptime stuck service by removing unsafe self-restart, refreshing polling alarms safely, and capping indexed local logs"
+    "changelog": "v2.4.9: Real diagnostics on every send timeout (uptime, last success, a11y/WhatsApp event ages, foreground app, retries, screen/doze/lock state). Long-press View Logs for live Health Report. Fixes keepAlive masking the frozen-accessibility detector."
 }
