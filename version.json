@@ -1,6 +1,6 @@
 {
-    "versionCode": 34,
-    "versionName": "2.4.9",
+    "versionCode": 35,
+    "versionName": "2.5.0",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.4.9: Real diagnostics on every send timeout (uptime, last success, a11y/WhatsApp event ages, foreground app, retries, screen/doze/lock state). Long-press View Logs for live Health Report. Fixes keepAlive masking the frozen-accessibility detector."
+    "changelog": "v2.5.0: Tap any log row to see the FULL diagnostic snapshot with a Copy button. On 'send button not found' timeouts, the snapshot now also includes the accessibility debug log and a live WhatsApp screen dump so we can tell exactly which UI element changed."
 }
