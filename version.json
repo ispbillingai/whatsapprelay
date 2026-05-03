@@ -1,6 +1,6 @@
 {
-    "versionCode": 35,
-    "versionName": "2.5.0",
+    "versionCode": 36,
+    "versionName": "2.5.1",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.0: Tap any log row to see the FULL diagnostic snapshot with a Copy button. On 'send button not found' timeouts, the snapshot now also includes the accessibility debug log and a live WhatsApp screen dump so we can tell exactly which UI element changed."
+    "changelog": "v2.5.1: Deeper diagnostics. Node tree dumps go 10 levels deep (was 5 - hid dialog contents). Active window snapshot is captured BEFORE timeout sets waitingToSend=false (was returning null because the unlock activity had already finished). Per-strategy 'no match' lines, root window class, longer text/desc previews."
 }
