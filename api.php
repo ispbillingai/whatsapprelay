@@ -646,8 +646,32 @@ if ($path === '/status' && $method === 'POST') {
         $stmt->execute([$messageId]);
         logAction($messageId, 'delivered', 'Message sent via WhatsApp');
     } else {
+        // Detect permanent-failure reasons reported by the APK. These are
+        // failures where retrying — on the same or a different device —
+        // can't possibly succeed, so skip the auto-retry path and mark
+        // final-failed immediately. Without this, "phone number isn't on
+        // WhatsApp" gets one auto-retry on another device, wasting battery
+        // and screen wakes for nothing.
+        $errLower = strtolower((string)$errorMessage);
+        $isPermanentFailure = (
+            strpos($errLower, 'recipient-not-on-whatsapp') !== false
+            || strpos($errLower, 'invalid-phone') !== false
+            || strpos($errLower, "isn't on whatsapp") !== false
+            || strpos($errLower, 'is not on whatsapp') !== false
+            || strpos($errLower, 'not on whatsapp') !== false
+        );
+
+        if ($isPermanentFailure) {
+            // Set retry_count = MAX_RETRY_COUNT so the /pending query
+            // (retry_count < MAX_RETRY_COUNT) won't re-pick this up. The
+            // dashboard's "Retry failed" button resets retry_count to 0
+            // and remains a deliberate manual override.
+            $db->prepare('UPDATE messages SET status = "failed", error_message = ?, retry_count = ? WHERE id = ?')
+               ->execute([$errorMessage, MAX_RETRY_COUNT, $messageId]);
+            logAction($messageId, 'failed', "Permanent failure (no retry): $errorMessage");
+        }
         // Failed — auto-retry ONCE on a different device if retry_count is 0
-        if (($msg['retry_count'] ?? 0) == 0) {
+        elseif (($msg['retry_count'] ?? 0) == 0) {
             // Get the current device that failed
             $failedDevice = $db->prepare('SELECT device_id FROM messages WHERE id = ?');
             $failedDevice->execute([$messageId]);
