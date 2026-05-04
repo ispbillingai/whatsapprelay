@@ -1,6 +1,6 @@
 {
-    "versionCode": 36,
-    "versionName": "2.5.1",
+    "versionCode": 37,
+    "versionName": "2.5.2",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.1: Deeper diagnostics. Node tree dumps go 10 levels deep (was 5 - hid dialog contents). Active window snapshot is captured BEFORE timeout sets waitingToSend=false (was returning null because the unlock activity had already finished). Per-strategy 'no match' lines, root window class, longer text/desc previews."
+    "changelog": "v2.5.2: Stop popup loop on undeliverable numbers. Detect WhatsApp's 'phone number isn't on WhatsApp' AlertDialog, click Cancel, report failed immediately (no more 20s timeout). Session blacklist short-circuits the same id if the server keeps re-queueing."
 }
