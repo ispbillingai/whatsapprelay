@@ -14,28 +14,9 @@ if (isset($_GET['set_wa_type']) && in_array($_GET['set_wa_type'], ['whatsapp', '
     exit;
 }
 
-// Handle retry failed/expired messages (AJAX)
-if (isset($_POST['retry_messages'])) {
-    header('Content-Type: application/json');
-    $retryType = $_POST['retry_type'] ?? 'all'; // 'all', 'failed', 'expired', or a specific message ID
-
-    if (is_numeric($retryType)) {
-        // Retry single message
-        $stmt = $db->prepare('UPDATE messages SET status = "pending", error_message = NULL, retry_count = 0, created_at = NOW() WHERE id = ? AND user_id = ? AND status IN ("failed", "expired")');
-        $stmt->execute([$retryType, $userId]);
-        echo json_encode(['success' => true, 'retried' => $stmt->rowCount()]);
-    } else {
-        $statusFilter = '';
-        if ($retryType === 'failed') $statusFilter = 'AND status = "failed"';
-        elseif ($retryType === 'expired') $statusFilter = 'AND status = "expired"';
-        else $statusFilter = 'AND status IN ("failed", "expired")';
-
-        $stmt = $db->prepare("UPDATE messages SET status = 'pending', error_message = NULL, retry_count = 0, created_at = NOW() WHERE user_id = ? $statusFilter");
-        $stmt->execute([$userId]);
-        echo json_encode(['success' => true, 'retried' => $stmt->rowCount()]);
-    }
-    exit;
-}
+// Bulk retry was removed — re-queueing thousands of messages at once was a
+// WhatsApp ban risk. Single-message retry lives in messages.php (POST
+// retry_id=N) where each retry is a deliberate, individual action.
 
 // Admin view toggle: ?view=admin or ?view=personal
 $adminView = false;
@@ -399,24 +380,6 @@ function copyKey() {
     icon.className = 'bi bi-check-lg text-success';
     setTimeout(function() { icon.className = 'bi bi-clipboard'; }, 2000);
 }
-function retryMessages(type) {
-    if (!confirm('Are you sure you want to retry ' + (type === 'all' ? 'all failed & expired' : type) + ' messages?')) return;
-    var btn = event.target.closest('button');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Retrying...';
-
-    fetch('dashboard.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'retry_messages=1&retry_type=' + type
-    })
-    .then(r => r.json())
-    .then(data => {
-        alert(data.retried + ' message(s) queued for retry.');
-        location.reload();
-    })
-    .catch(() => { btn.disabled = false; btn.innerHTML = 'Retry'; });
-}
 </script>
 
 <!-- Stats Cards -->
@@ -612,27 +575,26 @@ if (!$showAll) {
 ?>
 
 <?php if ($retryableCount > 0): ?>
-<!-- Retry Failed/Expired Messages -->
+<!-- Failed / Expired summary. Bulk retry was removed because re-queueing
+     thousands at once is a WhatsApp ban risk. Review individually in
+     messages.php — the per-row Retry button there sends one at a time. -->
 <div class="card mb-4 border-warning">
     <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
         <span><i class="bi bi-exclamation-triangle text-warning"></i> <strong><?= $retryableCount ?></strong> message(s) need attention</span>
     </div>
     <div class="card-body">
-        <p class="small text-muted mb-3">These messages were not delivered because your phone was offline or unreachable. You can retry sending them now.</p>
+        <p class="small text-muted mb-3">These messages were not delivered. Review them and retry individually — bulk retry is disabled to avoid sending many messages at once (WhatsApp ban risk).</p>
         <div class="d-flex gap-2 flex-wrap">
             <?php if ($statusCounts['failed'] > 0): ?>
-            <button class="btn btn-outline-danger btn-sm" onclick="retryMessages('failed')">
-                <i class="bi bi-arrow-repeat"></i> Retry <?= $statusCounts['failed'] ?> Failed
-            </button>
+            <a class="btn btn-outline-danger btn-sm" href="messages.php?status=failed">
+                <i class="bi bi-list-ul"></i> Review <?= $statusCounts['failed'] ?> Failed
+            </a>
             <?php endif; ?>
             <?php if ($statusCounts['expired'] > 0): ?>
-            <button class="btn btn-outline-secondary btn-sm" onclick="retryMessages('expired')">
-                <i class="bi bi-arrow-repeat"></i> Retry <?= $statusCounts['expired'] ?> Expired
-            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="messages.php?status=expired">
+                <i class="bi bi-list-ul"></i> Review <?= $statusCounts['expired'] ?> Expired
+            </a>
             <?php endif; ?>
-            <button class="btn btn-warning btn-sm" onclick="retryMessages('all')">
-                <i class="bi bi-arrow-repeat"></i> Retry All (<?= $retryableCount ?>)
-            </button>
         </div>
     </div>
 </div>
