@@ -1,6 +1,6 @@
 {
-    "versionCode": 37,
-    "versionName": "2.5.2",
+    "versionCode": 38,
+    "versionName": "2.5.3",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.2: Stop popup loop on undeliverable numbers. Detect WhatsApp's 'phone number isn't on WhatsApp' AlertDialog, click Cancel, report failed immediately (no more 20s timeout). Session blacklist short-circuits the same id if the server keeps re-queueing."
+    "changelog": "v2.5.3: Fix 'message left as draft' bug — Strategy 5 finds the send button by position relative to the chat input, regardless of resource ID, language, or custom view class. Catches WhatsApp Business send buttons we couldn't match before. Also bumps timeout 20s→35s and max retries 25→50 so slow phones / number lookups don't time out before the chat opens."
 }
