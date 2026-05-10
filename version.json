@@ -1,6 +1,6 @@
 {
-    "versionCode": 38,
-    "versionName": "2.5.3",
+    "versionCode": 39,
+    "versionName": "2.5.4",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.3: Fix 'message left as draft' bug — Strategy 5 finds the send button by position relative to the chat input, regardless of resource ID, language, or custom view class. Catches WhatsApp Business send buttons we couldn't match before. Also bumps timeout 20s→35s and max retries 25→50 so slow phones / number lookups don't time out before the chat opens."
+    "changelog": "v2.5.4: Route through unlock activity when device is locked, not only when screen is off. Catches the case where a notification woke the screen but the keyguard is still up — previously the WhatsApp deep link launched behind the lock screen and the message went nowhere. Includes v2.5.3's draft fix (Strategy 5: position-based send button finder)."
 }
