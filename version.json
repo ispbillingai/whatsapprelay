@@ -1,6 +1,6 @@
 {
-    "versionCode": 40,
-    "versionName": "2.5.5",
+    "versionCode": 41,
+    "versionName": "2.5.6",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.5: Stop the 'stuck on WhatsApp home' failure — only click 'Continue to chat' specifically, not generic 'Continue' or 'OK' buttons that were closing notification permission / system disambiguation popups and bouncing the app back to home. Also adds a 'stuck on home' diagnostic header so this case is no longer misclassified as 'send button not found'."
+    "changelog": "v2.5.6: Undo v2.5.5's mistaken 'skip on home' logic — Strategy 5 always runs. Broaden draft input detection to isEditable() (catches WhatsApp's custom subclasses). Dumps now go 15 levels deep (was 10 — was cutting off right before the chat content). Timeout snapshots now list every editable node + every clickable image button with bounds, so the actual send button on your phone is visible in the log."
 }
