@@ -1,6 +1,6 @@
 {
-    "versionCode": 41,
-    "versionName": "2.5.6",
+    "versionCode": 42,
+    "versionName": "2.5.7",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.6: Undo v2.5.5's mistaken 'skip on home' logic — Strategy 5 always runs. Broaden draft input detection to isEditable() (catches WhatsApp's custom subclasses). Dumps now go 15 levels deep (was 10 — was cutting off right before the chat content). Timeout snapshots now list every editable node + every clickable image button with bounds, so the actual send button on your phone is visible in the log."
+    "changelog": "v2.5.7: Fix the 'works for a day then needs reboot' bug — sendAttempted static flag was getting stuck at true after PollingService's outer timeout fired, blocking every subsequent send's retry loop from starting. Now reset properly at both the timeout and the start of every send."
 }
