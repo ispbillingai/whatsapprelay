@@ -1,6 +1,6 @@
 {
-    "versionCode": 39,
-    "versionName": "2.5.4",
+    "versionCode": 40,
+    "versionName": "2.5.5",
     "apkUrl": "https://whatsapp.ispledger.com/whatsapp.apk",
-    "changelog": "v2.5.4: Route through unlock activity when device is locked, not only when screen is off. Catches the case where a notification woke the screen but the keyguard is still up — previously the WhatsApp deep link launched behind the lock screen and the message went nowhere. Includes v2.5.3's draft fix (Strategy 5: position-based send button finder)."
+    "changelog": "v2.5.5: Stop the 'stuck on WhatsApp home' failure — only click 'Continue to chat' specifically, not generic 'Continue' or 'OK' buttons that were closing notification permission / system disambiguation popups and bouncing the app back to home. Also adds a 'stuck on home' diagnostic header so this case is no longer misclassified as 'send button not found'."
 }
